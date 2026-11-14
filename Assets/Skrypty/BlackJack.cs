@@ -17,18 +17,25 @@ public class BlackJack : MonoBehaviour
     public float cardOffsetX = 45f;
     public List<Image> spawnedPlayerCards = new List<Image>();
     public List<Image> spawnedDealerCards = new List<Image>();
+    public Text Player_Score;
+    public Text Dealer_Score;
 
     void Awake()
     {
         Cards = GetComponent<Cards>();
+        PlayerCard1.gameObject.SetActive(false);
+        DealerCard1.gameObject.SetActive(false);
     }
     public void Bet()
     {
         if (isGameActive) return;
-
+        PlayerCard1.gameObject.SetActive(true);
+        DealerCard1.gameObject.SetActive(true);
         usedCardIndices.Clear();
         playerScore = 0;
         dealerScore = 0;
+        if (Player_Score != null) Player_Score.text = playerScore.ToString();
+        if (Dealer_Score != null) Dealer_Score.text = dealerScore.ToString();
         playerAces = 0;
         dealerAces = 0;
         isGameActive = true;
@@ -114,6 +121,8 @@ public class BlackJack : MonoBehaviour
             playerScore -= 10;
             playerAces--;
         }
+
+        if (Player_Score != null) Player_Score.text = playerScore.ToString();
     }
 
     public void DrawCardForDealer()
@@ -131,6 +140,8 @@ public class BlackJack : MonoBehaviour
             dealerScore -= 10;
             dealerAces--;
         }
+
+        if (Dealer_Score != null) Dealer_Score.text = dealerScore.ToString();
     }
 
     public int DrawUniqueCardIndex()
