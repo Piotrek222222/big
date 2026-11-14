@@ -18,11 +18,13 @@ public class SlotMachineGame : MonoBehaviour
     [SerializeField] private Sprite[] symbols;
 
     [SerializeField] private TMP_Text resultText;
+    [SerializeField] private TMP_Text balanceText;
 
     private const int SpinCost = 10;
     private const int WinPayout = 300;
 
     private bool spinning;
+    private int pendingWinPayout;
 
     private void Start()
     {
@@ -39,6 +41,8 @@ public class SlotMachineGame : MonoBehaviour
         leverUp.SetActive(true);
         leverDown.SetActive(false);
         resultText.gameObject.SetActive(false);
+
+        UpdateBalanceUI();
     }
 
     private void Update()
@@ -73,14 +77,14 @@ public class SlotMachineGame : MonoBehaviour
             return;
         }
 
+        UpdateBalanceUI();
+
         Sprite first = symbols[Random.Range(0, symbols.Length)];
         Sprite second = symbols[Random.Range(0, symbols.Length)];
         Sprite third = symbols[Random.Range(0, symbols.Length)];
         bool win = first == second && second == third;
 
-        // Credit the payout before the reveal in case the day ends mid-spin.
-        if (win)
-            run.AddCash(WinPayout);
+        pendingWinPayout = win ? WinPayout : 0;
 
         StartCoroutine(RevealSymbols(first, second, third, win));
     }
@@ -96,6 +100,9 @@ public class SlotMachineGame : MonoBehaviour
         symbol3.enabled = false;
         resultText.gameObject.SetActive(false);
 
+        if (balanceText != null)
+            balanceText.gameObject.SetActive(false);
+
         var delay = new WaitForSecondsRealtime(1f);
 
         yield return delay;
@@ -107,11 +114,42 @@ public class SlotMachineGame : MonoBehaviour
         yield return delay;
         Reveal(symbol3, third);
 
+        if (pendingWinPayout > 0)
+        {
+            if (GameRun.Instance != null)
+                GameRun.Instance.AddCash(pendingWinPayout);
+            else
+                GameData.PobierzLubUtworz().SaldoGracza += pendingWinPayout;
+
+            pendingWinPayout = 0;
+        }
+
+        UpdateBalanceUI();
+        if (balanceText != null)
+            balanceText.gameObject.SetActive(true);
+
         ShowResult(win ? $"BIG WIN! +${WinPayout}" : "YOU LOSE!");
 
         leverDown.SetActive(false);
         leverUp.SetActive(true);
         spinning = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (pendingWinPayout > 0)
+        {
+            GameData.PobierzLubUtworz().SaldoGracza += pendingWinPayout;
+            pendingWinPayout = 0;
+        }
+    }
+
+    private void UpdateBalanceUI()
+    {
+        if (balanceText != null)
+        {
+            balanceText.text = $"${GameData.PobierzLubUtworz().SaldoGracza}";
+        }
     }
 
     private void Reveal(Image image, Sprite sprite)
