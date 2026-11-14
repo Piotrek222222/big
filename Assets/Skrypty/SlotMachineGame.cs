@@ -19,10 +19,9 @@ public class SlotMachineGame : MonoBehaviour
 
     [SerializeField] private TMP_Text resultText;
 
-    [SerializeField] private string luckPrefsKey = "PlayerLuck";
-    [SerializeField] private float defaultLuck = 0f;
+    private const int SpinCost = 10;
+    private const int WinPayout = 300;
 
-    private float luck;
     private bool spinning;
 
     private void Start()
@@ -32,76 +31,98 @@ public class SlotMachineGame : MonoBehaviour
             resultText == null || symbols == null || symbols.Length == 0 ||
             System.Array.Exists(symbols, sprite => sprite == null))
         {
-            Debug.LogError("Uzupełnij wszystkie pola SlotMachineGame w Inspectorze.", this);
+            Debug.LogError("Assign all SlotMachineGame fields in the Inspector.", this);
             enabled = false;
             return;
         }
 
-        luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
-
         leverUp.SetActive(true);
         leverDown.SetActive(false);
         resultText.gameObject.SetActive(false);
-        resultText.text = "";
     }
 
     private void Update()
     {
 #if ENABLE_INPUT_SYSTEM
-        bool spacePressed = Keyboard.current != null &&
-                            Keyboard.current.spaceKey.wasPressedThisFrame;
+        var keyboard = Keyboard.current;
+        bool spacePressed = keyboard != null && keyboard.spaceKey.wasPressedThisFrame;
 #else
         bool spacePressed = Input.GetKeyDown(KeyCode.Space);
 #endif
 
-        if (spacePressed && !spinning)
-            StartCoroutine(RevealSymbols());
+        if (!spacePressed || spinning)
+            return;
+
+        GameRun run = GameRun.Instance;
+
+        if (run == null || run.Day == 0)
+        {
+            ShowResult("Start a new game from the main menu.");
+            return;
+        }
+
+        if (!run.CasinoSessionActive || run.SecondsLeft <= 0f)
+        {
+            ShowResult("The casino session has ended.");
+            return;
+        }
+
+        if (!run.TrySpend(SpinCost))
+        {
+            ShowResult($"<size=60%>You need ${SpinCost} to play.</size>");
+            return;
+        }
+
+        Sprite first = symbols[Random.Range(0, symbols.Length)];
+        Sprite second = symbols[Random.Range(0, symbols.Length)];
+        Sprite third = symbols[Random.Range(0, symbols.Length)];
+        bool win = first == second && second == third;
+
+        // Credit the payout before the reveal in case the day ends mid-spin.
+        if (win)
+            run.AddCash(WinPayout);
+
+        StartCoroutine(RevealSymbols(first, second, third, win));
     }
 
-    private IEnumerator RevealSymbols()
+    private IEnumerator RevealSymbols(Sprite first, Sprite second, Sprite third, bool win)
     {
         spinning = true;
-        luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
 
         leverUp.SetActive(false);
         leverDown.SetActive(true);
         symbol1.enabled = false;
         symbol2.enabled = false;
         symbol3.enabled = false;
-        resultText.text = "";
+        resultText.gameObject.SetActive(false);
 
         var delay = new WaitForSecondsRealtime(1f);
 
         yield return delay;
-        Reveal(symbol1);
+        Reveal(symbol1, first);
 
         yield return delay;
-        Reveal(symbol2);
+        Reveal(symbol2, second);
 
         yield return delay;
-        if (symbol1.sprite == symbol2.sprite && Random.Range(0f, 100f) < luck)
-        {
-            symbol3.sprite = symbol1.sprite;
-            symbol3.enabled = true;
-        }
-        else
-        {
-            Reveal(symbol3);
-        }
+        Reveal(symbol3, third);
 
-        bool win = symbol1.sprite == symbol2.sprite &&
-                   symbol2.sprite == symbol3.sprite;
+        ShowResult(win ? $"BIG WIN! +${WinPayout}" : "YOU LOSE!");
 
-        resultText.text = win ? "BIG WIN!" : "YOU LOSE!";
-        resultText.gameObject.SetActive(true);
         leverDown.SetActive(false);
         leverUp.SetActive(true);
         spinning = false;
     }
 
-    private void Reveal(Image image)
+    private void Reveal(Image image, Sprite sprite)
     {
-        image.sprite = symbols[Random.Range(0, symbols.Length)];
+        image.sprite = sprite;
         image.enabled = true;
+    }
+
+    private void ShowResult(string message)
+    {
+        resultText.text = message;
+        resultText.gameObject.SetActive(true);
     }
 }
