@@ -81,9 +81,11 @@ public class BlackJack : MonoBehaviour
         // Sprawdzenie, czy stawka jest poprawna i czy gracza stać
         if (aktualnaStawka <= 0 || SaldoGracza < aktualnaStawka)
         {
-            UstawWynikUI("Za mało środków!");
             return;
         }
+
+        // Odtworzenie dźwięku o indeksie 2 z listy SFX w AudioManager
+        
 
         // Pobranie stawki z globalnego salda (od razu zapisuje się w GameData)
         SaldoGracza -= aktualnaStawka;
@@ -198,6 +200,10 @@ public class BlackJack : MonoBehaviour
 
     public void DrawCardForPlayer()
     {
+        if (AudioManager.instance != null)
+        {
+            AudioManager.instance.PlaySFX(2);
+        }
         int cardIndex = DrawUniqueCardIndex();
         if (cardIndex == -1) return;
 
@@ -263,6 +269,10 @@ public class BlackJack : MonoBehaviour
 
     public void DrawCardForDealer()
     {
+        if (AudioManager.instance != null)
+        {
+            AudioManager.instance.PlaySFX(2);
+        }
         int cardIndex = DrawUniqueCardIndex();
         if (cardIndex == -1) return;
 

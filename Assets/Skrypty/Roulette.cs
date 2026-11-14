@@ -135,6 +135,10 @@ public class RuletkaManager : MonoBehaviour
 
     public void Losuj()
     {
+        if (AudioManager.instance != null)
+        {
+            AudioManager.instance.PlaySFX(3);
+        }
         LosujIZapisz();
     }
 
