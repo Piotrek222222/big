@@ -187,6 +187,8 @@ MonoBehaviour:
   - {fileID: -2391669244243282240, guid: 5063444465ccc03438672ce6d76f1d8c, type: 3}
   - {fileID: 4082474446782044660, guid: 4ade94188c0afe34e88060baded07122, type: 3}
   resultText: {fileID: 387425665}
+  luckPrefsKey: PlayerLuck
+  defaultLuck: 0
 --- !u!114 &53461534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -517,7 +519,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -533,7 +535,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 210582617}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

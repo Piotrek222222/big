@@ -19,6 +19,10 @@ public class SlotMachineGame : MonoBehaviour
 
     [SerializeField] private TMP_Text resultText;
 
+    [SerializeField] private string luckPrefsKey = "PlayerLuck";
+    [SerializeField] private float defaultLuck = 0f;
+
+    private float luck;
     private bool spinning;
 
     private void Start()
@@ -32,6 +36,8 @@ public class SlotMachineGame : MonoBehaviour
             enabled = false;
             return;
         }
+
+        luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
 
         leverUp.SetActive(true);
         leverDown.SetActive(false);
@@ -55,6 +61,7 @@ public class SlotMachineGame : MonoBehaviour
     private IEnumerator RevealSymbols()
     {
         spinning = true;
+        luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
 
         leverUp.SetActive(false);
         leverDown.SetActive(true);
@@ -72,7 +79,15 @@ public class SlotMachineGame : MonoBehaviour
         Reveal(symbol2);
 
         yield return delay;
-        Reveal(symbol3);
+        if (symbol1.sprite == symbol2.sprite && Random.Range(0f, 100f) < luck)
+        {
+            symbol3.sprite = symbol1.sprite;
+            symbol3.enabled = true;
+        }
+        else
+        {
+            Reveal(symbol3);
+        }
 
         bool win = symbol1.sprite == symbol2.sprite &&
                    symbol2.sprite == symbol3.sprite;

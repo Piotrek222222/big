@@ -20,12 +20,15 @@ public class BlackJack : MonoBehaviour
     public Text Player_Score;
     public Text Dealer_Score;
     public bool isHit;
-
+    public string luckPrefsKey = "PlayerLuck";
+    public float defaultLuck = 0f;
+    public float luck;
     void Awake()
     {
         Cards = GetComponent<Cards>();
         PlayerCard1.gameObject.SetActive(false);
         DealerCard1.gameObject.SetActive(false);
+        luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
     }
     public void Bet()
     {
@@ -63,6 +66,7 @@ public class BlackJack : MonoBehaviour
 
         if (playerScore > 21)
         {
+
             EndGame();
         }
         else if (playerScore == 21)
