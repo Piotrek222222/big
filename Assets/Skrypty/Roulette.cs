@@ -30,6 +30,7 @@ public class RuletkaManager : MonoBehaviour
     public int aktualnaStawka = 10;
     public int ostatniaWygrana;
     public Slider Bet_Size;
+    public Text BetScore;
 
     public string luckPrefsKey = "PlayerLuck";
     public float defaultLuck = 0f;
@@ -52,6 +53,7 @@ public class RuletkaManager : MonoBehaviour
         {
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
             Bet_Size.onValueChanged.AddListener(Zmiana);
+            Zmiana(Bet_Size.value); 
         }
 
         for (int i = 0; i < squares.Count; i++)
@@ -74,9 +76,14 @@ public class RuletkaManager : MonoBehaviour
         }
     }
 
-    public void Zmiana(float wartosc)
+   public void Zmiana(float wartosc)
     {
         aktualnaStawka = Mathf.RoundToInt(wartosc);
+
+        if (BetScore != null)
+        {
+            BetScore.text = aktualnaStawka.ToString();
+        }
     }
 
     public void Bet(int indeksPola)
