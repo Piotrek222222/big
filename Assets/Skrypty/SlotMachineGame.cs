@@ -38,6 +38,10 @@ public class SlotMachineGame : MonoBehaviour
         }
 
         luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+<<<<<<< Updated upstream
+=======
+        
+>>>>>>> Stashed changes
 
         leverUp.SetActive(true);
         leverDown.SetActive(false);
