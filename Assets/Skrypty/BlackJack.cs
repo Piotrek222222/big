@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
 public class BlackJack : MonoBehaviour
 {
     public Cards Cards;
@@ -23,19 +24,27 @@ public class BlackJack : MonoBehaviour
     public string luckPrefsKey = "PlayerLuck";
     public float defaultLuck = 0f;
     public float luck;
+
     void Awake()
     {
         Cards = GetComponent<Cards>();
         PlayerCard1.gameObject.SetActive(false);
         DealerCard1.gameObject.SetActive(false);
-        luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+
+        if (luck <= 0f)
+            luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
     }
+
     public void Bet()
     {
         if (isGameActive) return;
+
+        if (luck <= 0f && PlayerPrefs.HasKey(luckPrefsKey))
+            luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+
         PlayerCard1.gameObject.SetActive(true);
         DealerCard1.gameObject.SetActive(true);
-        isHit=false;
+        isHit = false;
         usedCardIndices.Clear();
         playerScore = 0;
         dealerScore = 0;
@@ -60,13 +69,12 @@ public class BlackJack : MonoBehaviour
     public void Hit()
     {
         if (!isGameActive) return;
-        isHit=true;
+        isHit = true;
 
         DrawCardForPlayer();
 
         if (playerScore > 21)
         {
-
             EndGame();
         }
         else if (playerScore == 21)
@@ -120,6 +128,16 @@ public class BlackJack : MonoBehaviour
         int cardIndex = DrawUniqueCardIndex();
         if (cardIndex == -1) return;
 
+        if (WillPlayerBust(cardIndex) && Random.Range(0f, 100f) < luck)
+        {
+            int safeCardIndex = DrawSafeCardIndexForPlayer();
+            if (safeCardIndex != -1)
+            {
+                usedCardIndices.Remove(cardIndex);
+                cardIndex = safeCardIndex;
+            }
+        }
+
         ShowPlayerCard(cardIndex);
         lastDrawnCardName = GetCardName(cardIndex);
         int value = GetCardValue(cardIndex, ref playerAces);
@@ -132,6 +150,42 @@ public class BlackJack : MonoBehaviour
         }
 
         if (Player_Score != null) Player_Score.text = playerScore.ToString();
+    }
+
+    private bool WillPlayerBust(int cardIndex)
+    {
+        int tempAces = playerAces;
+        int value = GetCardValue(cardIndex, ref tempAces);
+        int predictedScore = playerScore + value;
+
+        while (predictedScore > 21 && tempAces > 0)
+        {
+            predictedScore -= 10;
+            tempAces--;
+        }
+
+        return predictedScore > 21;
+    }
+
+    private int DrawSafeCardIndexForPlayer()
+    {
+        if (Cards == null || Cards.cards.Count == 0) return -1;
+        int playableDeckSize = Mathf.Min(52, Cards.cards.Count);
+
+        List<int> safeCandidates = new List<int>();
+        for (int i = 0; i < playableDeckSize; i++)
+        {
+            if (!usedCardIndices.Contains(i) && !WillPlayerBust(i))
+            {
+                safeCandidates.Add(i);
+            }
+        }
+
+        if (safeCandidates.Count == 0) return -1;
+
+        int chosenIndex = safeCandidates[Random.Range(0, safeCandidates.Count)];
+        usedCardIndices.Add(chosenIndex);
+        return chosenIndex;
     }
 
     public void DrawCardForDealer()
@@ -163,7 +217,7 @@ public class BlackJack : MonoBehaviour
         do
         {
             randomIndex = Random.Range(0, playableDeckSize);
-        } 
+        }
         while (usedCardIndices.Contains(randomIndex));
 
         usedCardIndices.Add(randomIndex);
@@ -261,19 +315,15 @@ public class BlackJack : MonoBehaviour
     {
         if (dealerScore > 21)
         {
-        
         }
         else if (playerScore > dealerScore)
         {
-        
         }
         else if (playerScore < dealerScore)
         {
-        
         }
         else
         {
-        
         }
 
         EndGame();

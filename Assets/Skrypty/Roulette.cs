@@ -30,6 +30,11 @@ public class RuletkaManager : MonoBehaviour
     public int aktualnaStawka = 10;
     public int ostatniaWygrana;
     public Slider Bet_Size;
+
+    public string luckPrefsKey = "PlayerLuck";
+    public float defaultLuck = 0f;
+    public float luck;
+
     public WynikRuletki ostatniWynik;
     public List<WynikRuletki> historiaLosowan = new List<WynikRuletki>();
     public List<Zaklad> aktywneZaklady = new List<Zaklad>();
@@ -41,6 +46,8 @@ public class RuletkaManager : MonoBehaviour
 
     private void Start()
     {
+        OdczytajLuck();
+
         if (Bet_Size != null)
         {
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
@@ -52,6 +59,18 @@ public class RuletkaManager : MonoBehaviour
             if (squares[i] == null) continue;
             int indeks = i;
             squares[i].onClick.AddListener(() => Bet(indeks));
+        }
+    }
+
+    private void OdczytajLuck()
+    {
+        if (luck <= 0f && PlayerPrefs.HasKey(luckPrefsKey))
+        {
+            luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+        }
+        else if (luck <= 0f)
+        {
+            luck = defaultLuck;
         }
     }
 
@@ -101,8 +120,19 @@ public class RuletkaManager : MonoBehaviour
 
     public WynikRuletki LosujIZapisz()
     {
+        OdczytajLuck();
+
         int wylosowana = Random.Range(0, 37);
         WynikRuletki wynik = AnalizujNumer(wylosowana);
+
+        if (aktywneZaklady.Count > 0 && ObliczSumeWygranych(wynik) == 0)
+        {
+            if (Random.Range(0f, 100f) < luck)
+            {
+                wylosowana = Random.Range(0, 37);
+                wynik = AnalizujNumer(wylosowana);
+            }
+        }
 
         ostatniWynik = wynik;
         historiaLosowan.Add(wynik);
@@ -114,16 +144,21 @@ public class RuletkaManager : MonoBehaviour
 
     public void Rozliczenie()
     {
-        int sumaWygranej = 0;
-
-        foreach (Zaklad zaklad in aktywneZaklady)
-        {
-            sumaWygranej += ObliczWygranaZaZaklad(zaklad, ostatniWynik);
-        }
+        int sumaWygranej = ObliczSumeWygranych(ostatniWynik);
 
         ostatniaWygrana = sumaWygranej;
         saldoGracza += sumaWygranej;
         aktywneZaklady.Clear();
+    }
+
+    private int ObliczSumeWygranych(WynikRuletki wynik)
+    {
+        int suma = 0;
+        foreach (Zaklad zaklad in aktywneZaklady)
+        {
+            suma += ObliczWygranaZaZaklad(zaklad, wynik);
+        }
+        return suma;
     }
 
     private int ObliczWygranaZaZaklad(Zaklad zaklad, WynikRuletki wynik)

@@ -485,6 +485,9 @@ MonoBehaviour:
   Player_Score: {fileID: 129286211}
   Dealer_Score: {fileID: 1745590968}
   isHit: 0
+  luckPrefsKey: PlayerLuck
+  defaultLuck: 0
+  luck: 0
 --- !u!1 &788904426
 GameObject:
   m_ObjectHideFlags: 0
