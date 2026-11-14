@@ -9,14 +9,14 @@ TagManager:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - bar
   - Water
   - UI
   - automaty
   - gracz
   - dzwignia
   - automat
-  - 
+  - bartender
   - 
   - 
   - 
@@ -41,6 +41,12 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: bar
+    uniqueID: 2968767561
+    locked: 0
+  - name: bartender
+    uniqueID: 1748194601
     locked: 0
   m_RenderingLayers:
   - Default
