@@ -26,15 +26,11 @@ public class RuletkaManager : MonoBehaviour
         public int kwota;
     }
 
-    public int saldoGracza = 1000;
     public int aktualnaStawka = 10;
     public int ostatniaWygrana;
     public Slider Bet_Size;
     public Text BetScore;
-
-    public string luckPrefsKey = "PlayerLuck";
-    public float defaultLuck = 0f;
-    public float luck;
+    public Text SaldoText; // Opcjonalnie: przypisz tekst wyświetlający saldo gracza
 
     public WynikRuletki ostatniWynik;
     public List<WynikRuletki> historiaLosowan = new List<WynikRuletki>();
@@ -45,15 +41,26 @@ public class RuletkaManager : MonoBehaviour
         1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36
     };
 
+    // Skróty odwołujące się bezpośrednio do globalnego GameData
+    private int SaldoGracza
+    {
+        get => GameData.PobierzLubUtworz().SaldoGracza;
+        set
+        {
+            GameData.PobierzLubUtworz().SaldoGracza = value;
+            OdswiezSaldoUI();
+        }
+    }
+
+    private float Luck => GameData.PobierzLubUtworz().Luck;
+
     private void Start()
     {
-        OdczytajLuck();
-
         if (Bet_Size != null)
         {
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
             Bet_Size.onValueChanged.AddListener(Zmiana);
-            Zmiana(Bet_Size.value); 
+            Zmiana(Bet_Size.value);
         }
 
         for (int i = 0; i < squares.Count; i++)
@@ -62,21 +69,19 @@ public class RuletkaManager : MonoBehaviour
             int indeks = i;
             squares[i].onClick.AddListener(() => Bet(indeks));
         }
+
+        OdswiezSaldoUI();
     }
 
-    private void OdczytajLuck()
+    private void OdswiezSaldoUI()
     {
-        if (luck <= 0f && PlayerPrefs.HasKey(luckPrefsKey))
+        if (SaldoText != null)
         {
-            luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
-        }
-        else if (luck <= 0f)
-        {
-            luck = defaultLuck;
+            SaldoText.text = SaldoGracza.ToString();
         }
     }
 
-   public void Zmiana(float wartosc)
+    public void Zmiana(float wartosc)
     {
         aktualnaStawka = Mathf.RoundToInt(wartosc);
 
@@ -88,10 +93,10 @@ public class RuletkaManager : MonoBehaviour
 
     public void Bet(int indeksPola)
     {
-        if (saldoGracza < aktualnaStawka || aktualnaStawka <= 0)
+        if (SaldoGracza < aktualnaStawka || aktualnaStawka <= 0)
             return;
 
-        saldoGracza -= aktualnaStawka;
+        SaldoGracza -= aktualnaStawka;
 
         for (int i = 0; i < aktywneZaklady.Count; i++)
         {
@@ -113,11 +118,13 @@ public class RuletkaManager : MonoBehaviour
 
     public void WyczyscZaklady()
     {
+        int zwrot = 0;
         foreach (Zaklad zaklad in aktywneZaklady)
         {
-            saldoGracza += zaklad.kwota;
+            zwrot += zaklad.kwota;
         }
         aktywneZaklady.Clear();
+        SaldoGracza += zwrot;
     }
 
     public void Losuj()
@@ -127,14 +134,12 @@ public class RuletkaManager : MonoBehaviour
 
     public WynikRuletki LosujIZapisz()
     {
-        OdczytajLuck();
-
         int wylosowana = Random.Range(0, 37);
         WynikRuletki wynik = AnalizujNumer(wylosowana);
 
         if (aktywneZaklady.Count > 0 && ObliczSumeWygranych(wynik) == 0)
         {
-            if (Random.Range(0f, 100f) < luck)
+            if (Random.Range(0f, 100f) < Luck)
             {
                 wylosowana = Random.Range(0, 37);
                 wynik = AnalizujNumer(wylosowana);
@@ -154,8 +159,8 @@ public class RuletkaManager : MonoBehaviour
         int sumaWygranej = ObliczSumeWygranych(ostatniWynik);
 
         ostatniaWygrana = sumaWygranej;
-        saldoGracza += sumaWygranej;
         aktywneZaklady.Clear();
+        SaldoGracza += sumaWygranej;
     }
 
     private int ObliczSumeWygranych(WynikRuletki wynik)
@@ -174,9 +179,7 @@ public class RuletkaManager : MonoBehaviour
         int stawka = zaklad.kwota;
 
         if (idx >= 0 && idx <= 36)
-        {
             return (wynik.wartoscLiczbowa == idx) ? stawka * 36 : 0;
-        }
 
         if (idx >= 37 && idx <= 39)
         {
@@ -191,24 +194,16 @@ public class RuletkaManager : MonoBehaviour
         }
 
         if (idx == 43)
-        {
             return (wynik.kolor == KolorPola.Czerwony) ? stawka * 2 : 0;
-        }
 
         if (idx == 44)
-        {
             return (wynik.kolor == KolorPola.Czarny) ? stawka * 2 : 0;
-        }
 
         if (idx == 45)
-        {
             return (wynik.parzystosc == Parzystosc.Even) ? stawka * 2 : 0;
-        }
 
         if (idx == 46)
-        {
             return (wynik.parzystosc == Parzystosc.Odd) ? stawka * 2 : 0;
-        }
 
         return 0;
     }
