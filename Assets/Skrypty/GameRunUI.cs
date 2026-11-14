@@ -19,20 +19,14 @@ public class GameRunUI : MonoBehaviour
 
             if (hasRun)
             {
-                float luck = GameData.PobierzLubUtworz().Luck;
-
                 status = $"Day {run.Day} | Money: ${run.Money}\n" +
-                         $"Luck: {luck:0.##}";
+                         $"Luck: {run.EffectiveLuck:0.##}";
 
                 if (!run.IsFinished)
-                {
                     status += $"\nAllowance due: ${run.NextPayment} by the end of day {run.NextDueDay}";
-                }
 
                 if (!string.IsNullOrEmpty(run.Message))
-                {
                     status += $"\n{run.Message}";
-                }
             }
 
             statusText.text = status;
@@ -85,9 +79,7 @@ public class GameRunUI : MonoBehaviour
         GameRun run = GameRun.Instance;
 
         if ((run == null || !run.CasinoSessionActive) && CanLoad("MainMenu"))
-        {
             SceneManager.LoadScene("MainMenu");
-        }
     }
 
     private bool CanLoad(string sceneName)

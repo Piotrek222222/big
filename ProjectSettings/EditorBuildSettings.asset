@@ -23,5 +23,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Roulete.unity
     guid: 9667628acb663d74aa22ebdb2f4f50e4
+  - enabled: 1
+    path: Assets/Scenes/bar.unity
+    guid: 166d2b19ca5d2d042866cd0c6ab94369
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 3590b91b4603b465dbb4216d601bff33, type: 3}

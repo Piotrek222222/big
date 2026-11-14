@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,14 +11,23 @@ public class GameRun : MonoBehaviour
 
     private const int StartingMoney = 60;
     private const int DaysBetweenPayments = 3;
+    private const double PotionDuration = 30d;
     private static readonly int[] Payments = { 100, 175, 275 };
 
+<<<<<<< Updated upstream
     // Intermission screen shown after every in-game day.
     public const string NowyDzienScene = "NowyDzien";
+=======
+    private readonly HashSet<int> soldBottles = new HashSet<int>();
+>>>>>>> Stashed changes
 
     private string casinoScene;
     private double sessionEndsAt;
     private bool startTimerOnCasinoLoad;
+
+    private double luckyEndsAt;
+    private double moneyEndsAt;
+    private float permanentLuckMultiplier = 1f;
 
     public int Day { get; private set; }
     public bool IsFinished { get; private set; }
@@ -37,6 +48,16 @@ public class GameRun : MonoBehaviour
     public float SecondsLeft => CasinoSessionActive
         ? Mathf.Max(0f, (float)(sessionEndsAt - Time.unscaledTimeAsDouble))
         : 0f;
+
+    public float EffectiveLuck
+    {
+        get
+        {
+            float baseLuck = GameData.PobierzLubUtworz().Luck;
+            float luckyMultiplier = Time.unscaledTimeAsDouble < luckyEndsAt ? 2f : 1f;
+            return baseLuck * permanentLuckMultiplier * luckyMultiplier;
+        }
+    }
 
     private void Awake()
     {
@@ -75,6 +96,11 @@ public class GameRun : MonoBehaviour
         startTimerOnCasinoLoad = true;
 <<<<<<< HEAD
 
+        soldBottles.Clear();
+        luckyEndsAt = 0d;
+        moneyEndsAt = 0d;
+        permanentLuckMultiplier = 1f;
+
         GameData.PobierzLubUtworz().SaldoGracza = StartingMoney;
         Message = "Your first allowance payment is due at the end of day 3.";
 =======
@@ -103,6 +129,56 @@ public class GameRun : MonoBehaviour
 
         GameData data = GameData.PobierzLubUtworz();
         data.SaldoGracza += amount;
+    }
+
+    public int CreditWin(int payout)
+    {
+        if (!CasinoSessionActive || payout <= 0)
+            return 0;
+
+        int credited = payout;
+
+        if (Time.unscaledTimeAsDouble < moneyEndsAt)
+            credited = (int)Math.Round(payout * 1.5d, MidpointRounding.AwayFromZero);
+
+        AddCash(credited);
+        return credited;
+    }
+
+    public bool IsBottleSold(int index) => soldBottles.Contains(index);
+
+    public void MarkBottleSold(int index)
+    {
+        soldBottles.Add(index);
+    }
+
+    public void ActivateLuckyPotion()
+    {
+        luckyEndsAt = Math.Max(luckyEndsAt, Time.unscaledTimeAsDouble)
+                      + PotionDuration;
+    }
+
+    public void ActivateMoneyPotion()
+    {
+        moneyEndsAt = Math.Max(moneyEndsAt, Time.unscaledTimeAsDouble)
+                      + PotionDuration;
+    }
+
+    public void DoublePermanentLuck()
+    {
+        permanentLuckMultiplier *= 2f;
+    }
+
+    public void EndRunFromDeathPotion()
+    {
+        if (!CasinoSessionActive || IsFinished)
+            return;
+
+        IsFinished = true;
+        CasinoSessionActive = false;
+        startTimerOnCasinoLoad = false;
+        Message = "GAME OVER! The Death potion ended your run.";
+        SceneManager.LoadScene(casinoScene);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -134,7 +210,6 @@ public class GameRun : MonoBehaviour
             {
                 data.SaldoGracza -= payment;
                 IsFinished = Day == Payments.Length * DaysBetweenPayments;
-
                 Message = IsFinished
                     ? "YOU WIN! You paid all the allowances."
                     : $"Allowance paid: ${payment}.";
