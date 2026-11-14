@@ -1069,7 +1069,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a18f01af0126f9841a9ac3a07b4373dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameRun
-  sessionDuration: 180
+  sessionDuration: 90
 --- !u!4 &1916964779
 Transform:
   m_ObjectHideFlags: 0
