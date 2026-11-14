@@ -5,16 +5,19 @@ public class BlackJack : MonoBehaviour
 {
     public Cards Cards;
     public Image PlayerCard1;
-    public Image PlayerCard2;
     public Image DealerCard1;
-    public Image DealerCard2;
     public int bet = 100;
     public bool isGameActive = false;
     public int playerScore = 0;
     public int dealerScore = 0;
     public int playerAces = 0;
     public int dealerAces = 0;
+    public string lastDrawnCardName;
     public List<int> usedCardIndices = new List<int>();
+    public float cardOffsetX = 45f;
+    public List<Image> spawnedPlayerCards = new List<Image>();
+    public List<Image> spawnedDealerCards = new List<Image>();
+
     void Awake()
     {
         Cards = GetComponent<Cards>();
@@ -29,6 +32,7 @@ public class BlackJack : MonoBehaviour
         playerAces = 0;
         dealerAces = 0;
         isGameActive = true;
+        ClearTable();
 
         DrawCardForPlayer();
         DrawCardForDealer();
@@ -40,7 +44,7 @@ public class BlackJack : MonoBehaviour
             Stand();
         }
         else if(dealerScore == 21){
-            CheckWinner();
+            EndGame();
 
         }
     }
@@ -100,6 +104,8 @@ public class BlackJack : MonoBehaviour
         int cardIndex = DrawUniqueCardIndex();
         if (cardIndex == -1) return;
 
+        ShowPlayerCard(cardIndex);
+        lastDrawnCardName = GetCardName(cardIndex);
         int value = GetCardValue(cardIndex, ref playerAces);
         playerScore += value;
 
@@ -115,6 +121,8 @@ public class BlackJack : MonoBehaviour
         int cardIndex = DrawUniqueCardIndex();
         if (cardIndex == -1) return;
 
+        ShowDealerCard(cardIndex);
+        lastDrawnCardName = GetCardName(cardIndex);
         int value = GetCardValue(cardIndex, ref dealerAces);
         dealerScore += value;
 
@@ -145,11 +153,87 @@ public class BlackJack : MonoBehaviour
     {
         int rank = index % 13;
 
-        if (rank <= 8) return rank + 2;
-        if (rank <= 11) return 10;
+        if (rank == 0)
+        {
+            aceCounter++;
+            return 11;
+        }
 
-        aceCounter++;
-        return 11;
+        if (rank <= 9) return rank + 1;
+
+        return 10;
+    }
+
+    public string GetCardName(int index)
+    {
+        string[] suits = { "Clubs", "Spades", "Hearts", "Diamonds" };
+        string[] ranks = { "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King" };
+
+        int suitIndex = index / 13;
+        int rankIndex = index % 13;
+
+        if (suitIndex < 0 || suitIndex >= suits.Length) return "Unknown";
+
+        return ranks[rankIndex] + " of " + suits[suitIndex];
+    }
+
+    public void ShowPlayerCard(int cardIndex)
+    {
+        Image targetCard;
+
+        if (spawnedPlayerCards.Count == 0)
+        {
+            targetCard = PlayerCard1;
+        }
+        else
+        {
+            targetCard = Instantiate(PlayerCard1, PlayerCard1.transform.parent);
+            RectTransform baseRect = PlayerCard1.GetComponent<RectTransform>();
+            RectTransform newRect = targetCard.GetComponent<RectTransform>();
+            newRect.anchoredPosition = new Vector2(baseRect.anchoredPosition.x + (spawnedPlayerCards.Count * cardOffsetX), baseRect.anchoredPosition.y);
+        }
+
+        targetCard.sprite = Cards.cards[cardIndex];
+        targetCard.gameObject.SetActive(true);
+        spawnedPlayerCards.Add(targetCard);
+    }
+
+    public void ShowDealerCard(int cardIndex)
+    {
+        Image targetCard;
+
+        if (spawnedDealerCards.Count == 0)
+        {
+            targetCard = DealerCard1;
+        }
+        else
+        {
+            targetCard = Instantiate(DealerCard1, DealerCard1.transform.parent);
+            RectTransform baseRect = DealerCard1.GetComponent<RectTransform>();
+            RectTransform newRect = targetCard.GetComponent<RectTransform>();
+            newRect.anchoredPosition = new Vector2(baseRect.anchoredPosition.x + (spawnedDealerCards.Count * cardOffsetX), baseRect.anchoredPosition.y);
+        }
+
+        targetCard.sprite = Cards.cards[cardIndex];
+        targetCard.gameObject.SetActive(true);
+        spawnedDealerCards.Add(targetCard);
+    }
+
+    public void ClearTable()
+    {
+        for (int i = 1; i < spawnedPlayerCards.Count; i++)
+        {
+            if (spawnedPlayerCards[i] != null) Destroy(spawnedPlayerCards[i].gameObject);
+        }
+        spawnedPlayerCards.Clear();
+        PlayerCard1.gameObject.SetActive(false);
+
+        for (int i = 1; i < spawnedDealerCards.Count; i++)
+        {
+            if (spawnedDealerCards[i] != null) Destroy(spawnedDealerCards[i].gameObject);
+        }
+        spawnedDealerCards.Clear();
+        DealerCard1.gameObject.SetActive(false);
     }
 
     public void CheckWinner()

@@ -1,19 +1,10 @@
 fileFormatVersion: 2
-guid: 22bb1cdac9846bb4eba3b7ab6147fbba
+guid: 31e0e19bc8aa05947a44b09c2470315a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7240461559829685710
-    second: BlackJack_Buttons_0
-  - first:
-      213: -2603113509890049450
-    second: BlackJack_Buttons_1
-  - first:
-      213: -2048407954313022131
-    second: BlackJack_Buttons_2
-  - first:
-      213: -8399225225465644335
-    second: BlackJack_Buttons_3
+      213: -6199411411098985928
+    second: button_hit_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -124,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: BlackJack_Buttons_0
+      name: button_hit_0
       rect:
         serializedVersion: 2
-        x: 15
-        y: 90
-        width: 41
-        height: 23
+        x: 0
+        y: 0
+        width: 39
+        height: 21
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -139,74 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 23a1b7ca296b48b90800000000000000
-      internalID: -7240461559829685710
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: BlackJack_Buttons_1
-      rect:
-        serializedVersion: 2
-        x: 57
-        y: 90
-        width: 41
-        height: 23
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 65abbfcfd02efdbd0800000000000000
-      internalID: -2603113509890049450
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: BlackJack_Buttons_2
-      rect:
-        serializedVersion: 2
-        x: 15
-        y: 65
-        width: 41
-        height: 23
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: d45761881d79293e0800000000000000
-      internalID: -2048407954313022131
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: BlackJack_Buttons_3
-      rect:
-        serializedVersion: 2
-        x: 57
-        y: 64
-        width: 41
-        height: 23
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 1dabe9f8825ff6b80800000000000000
-      internalID: -8399225225465644335
+      spriteID: 83a11f0ea2447f9a0800000000000000
+      internalID: -6199411411098985928
       vertices: []
       indices: 
       edges: []
@@ -225,10 +150,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      BlackJack_Buttons_0: -7240461559829685710
-      BlackJack_Buttons_1: -2603113509890049450
-      BlackJack_Buttons_2: -2048407954313022131
-      BlackJack_Buttons_3: -8399225225465644335
+      button_hit_0: -6199411411098985928
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
