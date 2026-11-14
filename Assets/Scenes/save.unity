@@ -2951,7 +2951,7 @@ Tilemap:
       - {fileID: -513954815238315726, guid: 16c408e71a7a1ce408aee616fcd897e7, type: 3}
       - {fileID: -3321333697550008028, guid: 16c408e71a7a1ce408aee616fcd897e7, type: 3}
       - {fileID: -6760116130866400786, guid: 16c408e71a7a1ce408aee616fcd897e7, type: 3}
-      m_AnimationSpeed: 3
+      m_AnimationSpeed: 3.0000002
       m_AnimationTimeOffset: 0
       m_Flags: 0
   m_TileAssetArray:
@@ -3423,7 +3423,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -574.33, y: 322.88}
+  m_AnchoredPosition: {x: -641, y: 369.1}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1586645911

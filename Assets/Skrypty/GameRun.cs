@@ -16,12 +16,11 @@ public class GameRun : MonoBehaviour
     private bool startTimerOnCasinoLoad;
 
     public int Day { get; private set; }
-    public int Money { get; private set; }
     public bool IsFinished { get; private set; }
     public bool CasinoSessionActive { get; private set; }
     public string Message { get; private set; } = "";
 
-    // Keeps existing scripts that read Cash compatible.
+    public int Money => GameData.PobierzLubUtworz().SaldoGracza;
     public int Cash => Money;
 
     public int NextDueDay => Day == 0 || IsFinished
@@ -68,29 +67,35 @@ public class GameRun : MonoBehaviour
     {
         casinoScene = startingCasinoScene;
         Day = 1;
-        Money = StartingMoney;
         IsFinished = false;
         CasinoSessionActive = false;
         startTimerOnCasinoLoad = true;
-       
+
+        GameData.PobierzLubUtworz().SaldoGracza = StartingMoney;
+        Message = "Your first allowance payment is due at the end of day 3.";
     }
 
     public bool TrySpend(int amount)
     {
-        if (!CasinoSessionActive || SecondsLeft <= 0f ||
-            amount <= 0 || Money < amount)
-        {
+        if (!CasinoSessionActive || SecondsLeft <= 0f || amount <= 0)
             return false;
-        }
 
-        Money -= amount;
+        GameData data = GameData.PobierzLubUtworz();
+
+        if (data.SaldoGracza < amount)
+            return false;
+
+        data.SaldoGracza -= amount;
         return true;
     }
 
     public void AddCash(int amount)
     {
-        if (CasinoSessionActive && amount > 0)
-            Money += amount;
+        if (!CasinoSessionActive || amount <= 0)
+            return;
+
+        GameData data = GameData.PobierzLubUtworz();
+        data.SaldoGracza += amount;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -111,15 +116,16 @@ public class GameRun : MonoBehaviour
         if (Day == NextDueDay)
         {
             int payment = NextPayment;
+            GameData data = GameData.PobierzLubUtworz();
 
-            if (Money < payment)
+            if (data.SaldoGracza < payment)
             {
                 IsFinished = true;
-                Message = $"GAME OVER! You are ${payment - Money} short.";
+                Message = $"GAME OVER! You are ${payment - data.SaldoGracza} short.";
             }
             else
             {
-                Money -= payment;
+                data.SaldoGracza -= payment;
                 IsFinished = Day == Payments.Length * DaysBetweenPayments;
 
                 Message = IsFinished
