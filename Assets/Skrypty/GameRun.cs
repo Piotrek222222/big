@@ -11,6 +11,9 @@ public class GameRun : MonoBehaviour
     private const int DaysBetweenPayments = 3;
     private static readonly int[] Payments = { 100, 175, 275 };
 
+    // Intermission screen shown after every in-game day.
+    public const string NowyDzienScene = "NowyDzien";
+
     private string casinoScene;
     private double sessionEndsAt;
     private bool startTimerOnCasinoLoad;
@@ -70,9 +73,13 @@ public class GameRun : MonoBehaviour
         IsFinished = false;
         CasinoSessionActive = false;
         startTimerOnCasinoLoad = true;
+<<<<<<< HEAD
 
         GameData.PobierzLubUtworz().SaldoGracza = StartingMoney;
         Message = "Your first allowance payment is due at the end of day 3.";
+=======
+        Message = "";
+>>>>>>> 5f1132f (Add NowyDzien scene)
     }
 
     public bool TrySpend(int amount)
@@ -140,6 +147,30 @@ public class GameRun : MonoBehaviour
             startTimerOnCasinoLoad = true;
         }
 
+        // Go through the intermission screen. It continues to the casino,
+        // where the timer for the next day starts (startTimerOnCasinoLoad).
+        SceneManager.LoadScene(
+            Application.CanStreamedLevelBeLoaded(NowyDzienScene)
+                ? NowyDzienScene
+                : casinoScene);
+    }
+
+    /// <summary>
+    /// Called by the intermission screen ("NowyDzien") to start the next
+    /// casino day. The day timer starts once the casino scene has loaded.
+    /// </summary>
+    public bool ContinueDay()
+    {
+        if (IsFinished || CasinoSessionActive)
+            return false;
+
+        if (!Application.CanStreamedLevelBeLoaded(casinoScene))
+        {
+            Debug.LogError($"Add scene '{casinoScene}' to the Build Profiles scene list.", this);
+            return false;
+        }
+
         SceneManager.LoadScene(casinoScene);
+        return true;
     }
 }
