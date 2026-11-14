@@ -2904,7 +2904,7 @@ Tilemap:
       - {fileID: -513954815238315726, guid: 16c408e71a7a1ce408aee616fcd897e7, type: 3}
       - {fileID: -3321333697550008028, guid: 16c408e71a7a1ce408aee616fcd897e7, type: 3}
       - {fileID: -6760116130866400786, guid: 16c408e71a7a1ce408aee616fcd897e7, type: 3}
-      m_AnimationSpeed: 3.0000002
+      m_AnimationSpeed: 3
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: -3, y: -2, z: 0}
@@ -3129,6 +3129,66 @@ MonoBehaviour:
   interactionRange: 0.3
   highlightColor: {r: 1, g: 1, b: 0.35, a: 1}
   targetScene: SlotMachine
+--- !u!1 &1307312810
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1307312811}
+  - component: {fileID: 1307312813}
+  - component: {fileID: 1307312812}
+  m_Layer: 0
+  m_Name: GameRun
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1307312811
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1307312810}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.83709, y: -0.90727, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1307312812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1307312810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a8872a677ab96d4894e659bd4e68840, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  casinoScene: save
+  statusText: {fileID: 0}
+--- !u!114 &1307312813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1307312810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a18f01af0126f9841a9ac3a07b4373dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  sessionDuration: 180
 --- !u!1 &1660950531
 GameObject:
   m_ObjectHideFlags: 0
@@ -3471,7 +3531,7 @@ GameObject:
   - component: {fileID: 1757313737}
   - component: {fileID: 1757313736}
   - component: {fileID: 1757313735}
-  - component: {fileID: 1757313734}
+  - component: {fileID: 1757313738}
   m_Layer: 0
   m_Name: Ruleta
   m_TagString: Untagged
@@ -3494,23 +3554,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1773822692}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1757313734
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1757313732}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fc06161718565b48b2d86d49a508fc0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SlotMachineInteraction
-  player: {fileID: 582193642}
-  machineTile: {fileID: 11400000, guid: 3f011616b438a024589ed8994bb687b0, type: 2}
-  interactionRange: 0.8
-  highlightColor: {r: 1, g: 1, b: 0.35, a: 1}
-  targetScene: Roulete
 --- !u!19719996 &1757313735
 TilemapCollider2D:
   m_ObjectHideFlags: 0
@@ -3599,7 +3642,7 @@ TilemapRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
+  m_ChunkCullingBounds: {x: 0.065, y: 0, z: 0}
   m_MaxChunkCount: 32
   m_MaxFrameAge: 64
   m_SortOrder: 0
@@ -3613,17 +3656,55 @@ Tilemap:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1757313732}
   m_Enabled: 1
-  m_Tiles: {}
+  m_Tiles:
+  - first: {x: -22, y: -12, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 0
+      m_TileSpriteIndex: 0
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 0
+      m_TileObjectToInstantiateIndex: 65535
+      dummyAlignment: 0
+      m_AllTileFlags: 1073741825
   m_AnimatedTiles: {}
-  m_TileAssetArray: []
-  m_TileSpriteArray: []
-  m_TileMatrixArray: []
-  m_TileColorArray: []
+  m_TileAssetArray:
+  - serializedVersion: 2
+    m_RefCount: 1
+    m_Data: {fileID: 11400000, guid: 3f011616b438a024589ed8994bb687b0, type: 2}
+  m_TileSpriteArray:
+  - serializedVersion: 2
+    m_RefCount: 1
+    m_Data: {fileID: -1165498696699061896, guid: 6f111fff76d947342a7b0df56cb051c3, type: 3}
+  m_TileMatrixArray:
+  - serializedVersion: 2
+    m_RefCount: 1
+    m_Data:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+  m_TileColorArray:
+  - serializedVersion: 2
+    m_RefCount: 1
+    m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Origin: {x: 0, y: 0, z: 0}
-  m_Size: {x: 0, y: 0, z: 1}
+  m_Origin: {x: -22, y: -12, z: 0}
+  m_Size: {x: 22, y: 16, z: 1}
   m_TileAnchor: {x: 0.5, y: 0.5, z: 0}
   m_TileOrientation: 0
   m_TileOrientationMatrix:
@@ -3643,6 +3724,23 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
+--- !u!114 &1757313738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757313732}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9623fb74e25147e43a01572fa003e79f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RouleteInteraction
+  player: {fileID: 582193642}
+  machineTile: {fileID: 11400000, guid: 3f011616b438a024589ed8994bb687b0, type: 2}
+  interactionRange: 0.8
+  highlightColor: {r: 1, g: 1, b: 0.35, a: 1}
+  targetScene: Roulete
 --- !u!1 &1773822690
 GameObject:
   m_ObjectHideFlags: 0
@@ -4141,6 +4239,7 @@ SceneRoots:
   - {fileID: 600391489}
   - {fileID: 2093817722}
   - {fileID: 268300208}
+  - {fileID: 1307312811}
   - {fileID: 1112497438478135040}
   - {fileID: 1660950535}
   - {fileID: 1683669742}
