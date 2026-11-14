@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 58aa78193ae45db49b8eead329705627
+guid: 17ba387d26730c843835478780a04e36
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5010173070415941796
-    second: money_counter_0
+      213: 909454856004693264
+    second: back_button_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -115,12 +115,12 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: money_counter_0
+      name: back_button_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 39
+        width: 21
         height: 21
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4a0de5dccd5b78540800000000000000
-      internalID: 5010173070415941796
+      spriteID: 01de96f7f580f9c00800000000000000
+      internalID: 909454856004693264
       vertices: []
       indices: 
       edges: []
@@ -150,7 +150,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      money_counter_0: 5010173070415941796
+      back_button_0: 909454856004693264
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

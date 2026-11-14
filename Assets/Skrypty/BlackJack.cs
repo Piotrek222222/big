@@ -21,33 +21,73 @@ public class BlackJack : MonoBehaviour
     public Text Player_Score;
     public Text Dealer_Score;
     public bool isHit;
-    public string luckPrefsKey = "PlayerLuck";
-    public float defaultLuck = 0f;
-    public float luck;
     public Slider Bet_Size;
     public Text BetScore;
+    public Text SaldoText; // Opcjonalnie: podepnij tekst salda z Canvasa
+    public Text ResultText; // Opcjonalnie: podepnij tekst wyniku (Wygrana / Przegrana / Remis)
+
+    private int SaldoGracza
+    {
+        get => GameData.PobierzLubUtworz().SaldoGracza;
+        set
+        {
+            GameData.PobierzLubUtworz().SaldoGracza = value;
+            OdswiezSaldoUI();
+        }
+    }
+
+    private float Luck => GameData.PobierzLubUtworz().Luck;
 
     void Awake()
     {
         Cards = GetComponent<Cards>();
         PlayerCard1.gameObject.SetActive(false);
         DealerCard1.gameObject.SetActive(false);
+
         if (Bet_Size != null)
         {
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
             Bet_Size.onValueChanged.AddListener(Zmiana);
             Zmiana(Bet_Size.value);
+        }
 
-        if (luck <= 0f)
-            luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+        OdswiezSaldoUI();
+    }
+
+    private void OdswiezSaldoUI()
+    {
+        if (SaldoText != null)
+        {
+            SaldoText.text = SaldoGracza.ToString();
         }
     }
+
+    private void UstawWynikUI(string komunikat)
+    {
+        if (ResultText != null)
+        {
+            ResultText.text = komunikat;
+        }
+    }
+
     public void Bet()
     {
         if (isGameActive) return;
 
-        if (luck <= 0f && PlayerPrefs.HasKey(luckPrefsKey))
-            luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+        // Zawsze pobierz aktualną wartość ze suwaka przed zakładem
+        if (Bet_Size != null)
+            aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
+
+        // Sprawdzenie, czy stawka jest poprawna i czy gracza stać
+        if (aktualnaStawka <= 0 || SaldoGracza < aktualnaStawka)
+        {
+            UstawWynikUI("Za mało środków!");
+            return;
+        }
+
+        // Pobranie stawki z globalnego salda (od razu zapisuje się w GameData)
+        SaldoGracza -= aktualnaStawka;
+        UstawWynikUI("");
 
         PlayerCard1.gameObject.SetActive(true);
         DealerCard1.gameObject.SetActive(true);
@@ -75,6 +115,9 @@ public class BlackJack : MonoBehaviour
 
     public void Zmiana(float wartosc)
     {
+        // Nie pozwalamy zmieniać stawki w trakcie aktywnego rozdania
+        if (isGameActive) return;
+
         aktualnaStawka = Mathf.RoundToInt(wartosc);
 
         if (BetScore != null)
@@ -92,6 +135,7 @@ public class BlackJack : MonoBehaviour
 
         if (playerScore > 21)
         {
+            UstawWynikUI($"Fura! Przegrałeś ${aktualnaStawka}");
             EndGame();
         }
         else if (playerScore == 21)
@@ -104,11 +148,23 @@ public class BlackJack : MonoBehaviour
     {
         if (!isGameActive) return;
         if (isHit) return;
+
+        // Sprawdzenie, czy gracza stać na podwojenie stawki
+        if (SaldoGracza < aktualnaStawka)
+        {
+            UstawWynikUI("Za mało środków na Double!");
+            return;
+        }
+
+        SaldoGracza -= aktualnaStawka;
         aktualnaStawka *= 2;
+        if (BetScore != null) BetScore.text = aktualnaStawka.ToString();
+
         DrawCardForPlayer();
 
         if (playerScore > 21)
         {
+            UstawWynikUI($"Fura! Przegrałeś ${aktualnaStawka}");
             EndGame();
         }
         else
@@ -145,7 +201,7 @@ public class BlackJack : MonoBehaviour
         int cardIndex = DrawUniqueCardIndex();
         if (cardIndex == -1) return;
 
-        if (WillPlayerBust(cardIndex) && Random.Range(0f, 100f) < luck)
+        if (WillPlayerBust(cardIndex) && Random.Range(0f, 100f) < Luck)
         {
             int safeCardIndex = DrawSafeCardIndexForPlayer();
             if (safeCardIndex != -1)
@@ -332,15 +388,25 @@ public class BlackJack : MonoBehaviour
     {
         if (dealerScore > 21)
         {
+            int wygrana = aktualnaStawka * 2;
+            SaldoGracza += wygrana;
+            UstawWynikUI($"Krupier ma furę! Wygrywasz ${wygrana}");
         }
         else if (playerScore > dealerScore)
         {
+            int wygrana = aktualnaStawka * 2;
+            SaldoGracza += wygrana;
+            UstawWynikUI($"Wygrałeś ${wygrana}!");
         }
         else if (playerScore < dealerScore)
         {
+            UstawWynikUI($"Przegrałeś ${aktualnaStawka}!");
         }
         else
         {
+            // Remis - zwrot postawionej stawki
+            SaldoGracza += aktualnaStawka;
+            UstawWynikUI("Remis! Zwrot stawki.");
         }
 
         EndGame();
@@ -349,5 +415,12 @@ public class BlackJack : MonoBehaviour
     public void EndGame()
     {
         isGameActive = false;
+
+        // Przywrócenie wyświetlania wartości ze suwaka po ewentualnym Double()
+        if (Bet_Size != null)
+        {
+            aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
+            if (BetScore != null) BetScore.text = aktualnaStawka.ToString();
+        }
     }
 }
