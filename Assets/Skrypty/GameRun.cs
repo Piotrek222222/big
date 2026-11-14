@@ -14,12 +14,9 @@ public class GameRun : MonoBehaviour
     private const double PotionDuration = 30d;
     private static readonly int[] Payments = { 100, 175, 275 };
 
-<<<<<<< Updated upstream
     // Intermission screen shown after every in-game day.
     public const string NowyDzienScene = "NowyDzien";
-=======
     private readonly HashSet<int> soldBottles = new HashSet<int>();
->>>>>>> Stashed changes
 
     private string casinoScene;
     private double sessionEndsAt;
@@ -94,7 +91,6 @@ public class GameRun : MonoBehaviour
         IsFinished = false;
         CasinoSessionActive = false;
         startTimerOnCasinoLoad = true;
-<<<<<<< HEAD
 
         soldBottles.Clear();
         luckyEndsAt = 0d;
@@ -103,9 +99,7 @@ public class GameRun : MonoBehaviour
 
         GameData.PobierzLubUtworz().SaldoGracza = StartingMoney;
         Message = "Your first allowance payment is due at the end of day 3.";
-=======
         Message = "";
->>>>>>> 5f1132f (Add NowyDzien scene)
     }
 
     public bool TrySpend(int amount)
