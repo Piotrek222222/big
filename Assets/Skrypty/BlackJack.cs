@@ -19,6 +19,7 @@ public class BlackJack : MonoBehaviour
     public List<Image> spawnedDealerCards = new List<Image>();
     public Text Player_Score;
     public Text Dealer_Score;
+    public bool isHit;
 
     void Awake()
     {
@@ -31,6 +32,7 @@ public class BlackJack : MonoBehaviour
         if (isGameActive) return;
         PlayerCard1.gameObject.SetActive(true);
         DealerCard1.gameObject.SetActive(true);
+        isHit=false;
         usedCardIndices.Clear();
         playerScore = 0;
         dealerScore = 0;
@@ -44,21 +46,18 @@ public class BlackJack : MonoBehaviour
         DrawCardForPlayer();
         DrawCardForDealer();
         DrawCardForPlayer();
-        DrawCardForDealer();
+        if (Cards != null && Cards.cards.Count > 52) ShowDealerCard(52);
 
         if (playerScore == 21)
         {
             Stand();
-        }
-        else if(dealerScore == 21){
-            EndGame();
-
         }
     }
 
     public void Hit()
     {
         if (!isGameActive) return;
+        isHit=true;
 
         DrawCardForPlayer();
 
@@ -75,7 +74,7 @@ public class BlackJack : MonoBehaviour
     public void Double()
     {
         if (!isGameActive) return;
-
+        if (isHit) return;
         bet *= 2;
         DrawCardForPlayer();
 
@@ -98,6 +97,12 @@ public class BlackJack : MonoBehaviour
 
     public void DealerTurn()
     {
+        if (spawnedDealerCards.Count > 1 && Cards != null && Cards.cards.Count > 52 && spawnedDealerCards[1].sprite == Cards.cards[52])
+        {
+            Destroy(spawnedDealerCards[1].gameObject);
+            spawnedDealerCards.RemoveAt(1);
+        }
+
         while (dealerScore < 17)
         {
             DrawCardForDealer();
@@ -147,12 +152,13 @@ public class BlackJack : MonoBehaviour
     public int DrawUniqueCardIndex()
     {
         if (Cards == null || Cards.cards.Count == 0) return -1;
-        if (usedCardIndices.Count >= Cards.cards.Count) return -1;
+        int playableDeckSize = Mathf.Min(52, Cards.cards.Count);
+        if (usedCardIndices.Count >= playableDeckSize) return -1;
 
         int randomIndex;
         do
         {
-            randomIndex = Random.Range(0, Cards.cards.Count);
+            randomIndex = Random.Range(0, playableDeckSize);
         } 
         while (usedCardIndices.Contains(randomIndex));
 
