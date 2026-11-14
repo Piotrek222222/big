@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class RuletkaManager : MonoBehaviour
 {
@@ -30,7 +31,8 @@ public class RuletkaManager : MonoBehaviour
     public int ostatniaWygrana;
     public Slider Bet_Size;
     public Text BetScore;
-    public Text SaldoText; // Opcjonalnie: przypisz tekst wyświetlający saldo gracza
+    public Text SaldoText;
+    public TMP_Text WynikText;
 
     public WynikRuletki ostatniWynik;
     public List<WynikRuletki> historiaLosowan = new List<WynikRuletki>();
@@ -38,10 +40,9 @@ public class RuletkaManager : MonoBehaviour
 
     private static readonly HashSet<int> czerwoneLiczby = new HashSet<int>
     {
-        1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36
+        1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32
     };
 
-    // Skróty odwołujące się bezpośrednio do globalnego GameData
     private int SaldoGracza
     {
         get => GameData.PobierzLubUtworz().SaldoGracza;
@@ -56,6 +57,11 @@ public class RuletkaManager : MonoBehaviour
 
     private void Start()
     {
+        if (WynikText != null)
+        {
+            WynikText.text = "";
+        }
+
         if (Bet_Size != null)
         {
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
@@ -134,20 +140,41 @@ public class RuletkaManager : MonoBehaviour
 
     public WynikRuletki LosujIZapisz()
     {
-        int wylosowana = Random.Range(0, 37);
+        // ZMIENIONE: Losuje wyłącznie numery od 0 do 33 (34 jest wyłączne)
+        int wylosowana = Random.Range(0, 34);
         WynikRuletki wynik = AnalizujNumer(wylosowana);
 
         if (aktywneZaklady.Count > 0 && ObliczSumeWygranych(wynik) == 0)
         {
             if (Random.Range(0f, 100f) < Luck)
             {
-                wylosowana = Random.Range(0, 37);
+                // ZMIENIONE: Ponowne losowanie (Luck) również w zakresie 0–33
+                wylosowana = Random.Range(0, 34);
                 wynik = AnalizujNumer(wylosowana);
             }
         }
 
         ostatniWynik = wynik;
         historiaLosowan.Add(wynik);
+
+        if (WynikText != null)
+        {
+            string angielskiKolor = "";
+            switch (wynik.kolor)
+            {
+                case KolorPola.Zielony:
+                    angielskiKolor = "Green";
+                    break;
+                case KolorPola.Czerwony:
+                    angielskiKolor = "Red";
+                    break;
+                case KolorPola.Czarny:
+                    angielskiKolor = "Black";
+                    break;
+            }
+
+            WynikText.text = $"{wynik.wyswietlanyNumer} {angielskiKolor}";
+        }
 
         Rozliczenie();
 
@@ -178,6 +205,7 @@ public class RuletkaManager : MonoBehaviour
         int idx = zaklad.indeksPola;
         int stawka = zaklad.kwota;
 
+        // Indeksy 34-36 zostają w liście jako puste (w pętli Start() są pomijane przez squares[i] == null)
         if (idx >= 0 && idx <= 36)
             return (wynik.wartoscLiczbowa == idx) ? stawka * 36 : 0;
 
