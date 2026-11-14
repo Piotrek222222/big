@@ -6,35 +6,43 @@ public class GameRunUI : MonoBehaviour
 {
     [SerializeField] private string casinoScene = "save";
     [SerializeField] private TMP_Text statusText;
+    [SerializeField] private TMP_Text timerText;
 
     private void LateUpdate()
     {
-        if (statusText == null)
-            return;
-
         GameRun run = GameRun.Instance;
+        bool hasRun = run != null && run.Day > 0;
 
-        if (run == null || run.Day == 0)
+        if (statusText != null)
         {
-            statusText.text = "";
-            return;
+            string status = "";
+
+            if (hasRun)
+            {
+                status = $"Day {run.Day} | Money: ${run.Money}";
+
+                if (!run.IsFinished)
+                    status += $"\nAllowance due: ${run.NextPayment} by the end of day {run.NextDueDay}";
+
+                if (!string.IsNullOrEmpty(run.Message))
+                    status += $"\n{run.Message}";
+            }
+
+            statusText.text = status;
         }
 
-        string status = $"Dzień {run.Day}  |  Gotówka: ${run.Cash}";
-
-        if (run.CasinoSessionActive)
+        if (timerText != null)
         {
-            int seconds = Mathf.CeilToInt(run.SecondsLeft);
-            status += $"  |  Czas: {seconds / 60:00}:{seconds % 60:00}";
+            if (hasRun && run.CasinoSessionActive)
+            {
+                int seconds = Mathf.CeilToInt(run.SecondsLeft);
+                timerText.text = $"{seconds / 60:00}:{seconds % 60:00}";
+            }
+            else
+            {
+                timerText.text = "";
+            }
         }
-
-        if (!run.IsFinished)
-            status += $"\nKieszonkowe: ${run.NextPayment} do końca dnia {run.NextDueDay}";
-
-        if (!string.IsNullOrEmpty(run.Message))
-            status += $"\n{run.Message}";
-
-        statusText.text = status;
     }
 
     public void NewGame()
@@ -43,7 +51,7 @@ public class GameRunUI : MonoBehaviour
 
         if (run == null)
         {
-            Debug.LogError("Dodaj GameRun do sceny MainMenu.", this);
+            Debug.LogError("Add a GameRun object to MainMenu.", this);
             return;
         }
 
@@ -81,7 +89,7 @@ public class GameRunUI : MonoBehaviour
             return true;
         }
 
-        Debug.LogError($"Dodaj scenę '{sceneName}' do Build Profiles → Scene List.", this);
+        Debug.LogError($"Add scene '{sceneName}' to the Build Profiles scene list.", this);
         return false;
     }
 }

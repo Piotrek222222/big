@@ -7,18 +7,22 @@ public class GameRun : MonoBehaviour
 
     [SerializeField, Min(1f)] private float sessionDuration = 180f;
 
-    private static readonly int[] Payments = { 100, 175, 275 };
+    private const int StartingMoney = 60;
     private const int DaysBetweenPayments = 3;
+    private static readonly int[] Payments = { 100, 175, 275 };
 
     private string casinoScene;
     private double sessionEndsAt;
     private bool startTimerOnCasinoLoad;
 
     public int Day { get; private set; }
-    public int Cash { get; private set; }
+    public int Money { get; private set; }
     public bool IsFinished { get; private set; }
     public bool CasinoSessionActive { get; private set; }
     public string Message { get; private set; } = "";
+
+    // Keeps existing scripts that read Cash compatible.
+    public int Cash => Money;
 
     public int NextDueDay => Day == 0 || IsFinished
         ? 0
@@ -64,29 +68,29 @@ public class GameRun : MonoBehaviour
     {
         casinoScene = startingCasinoScene;
         Day = 1;
-        Cash = 60;
+        Money = StartingMoney;
         IsFinished = false;
         CasinoSessionActive = false;
         startTimerOnCasinoLoad = true;
-        Message = "Pay up at the end of day 3.";
+       
     }
 
     public bool TrySpend(int amount)
     {
         if (!CasinoSessionActive || SecondsLeft <= 0f ||
-            amount <= 0 || Cash < amount)
+            amount <= 0 || Money < amount)
         {
             return false;
         }
 
-        Cash -= amount;
+        Money -= amount;
         return true;
     }
 
     public void AddCash(int amount)
     {
         if (CasinoSessionActive && amount > 0)
-            Cash += amount;
+            Money += amount;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -102,25 +106,25 @@ public class GameRun : MonoBehaviour
     private void FinishDay()
     {
         CasinoSessionActive = false;
-        Message = "Times up buddy";
+        Message = "Time's up. A new day begins.";
 
         if (Day == NextDueDay)
         {
             int payment = NextPayment;
 
-            if (Cash < payment)
+            if (Money < payment)
             {
                 IsFinished = true;
-                Message = $"You lost ${payment - Cash} due for pocket money.";
+                Message = $"GAME OVER! You are ${payment - Money} short.";
             }
             else
             {
-                Cash -= payment;
+                Money -= payment;
                 IsFinished = Day == Payments.Length * DaysBetweenPayments;
 
                 Message = IsFinished
-                    ? "You Won!."
-                    : $"Paid ${payment} of pocket money.";
+                    ? "YOU WIN! You paid all the allowances."
+                    : $"Allowance paid: ${payment}.";
             }
         }
 
