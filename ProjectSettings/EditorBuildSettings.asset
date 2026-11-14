@@ -20,5 +20,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/BlackJack.unity
     guid: 20212fbf94af706498ba25d2c9e1a42c
+  - enabled: 1
+    path: Assets/Scenes/Bar.unity
+    guid: 277e4794ef18dce4086be2c057a92d59
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 3590b91b4603b465dbb4216d601bff33, type: 3}
