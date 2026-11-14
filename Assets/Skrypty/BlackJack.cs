@@ -7,7 +7,7 @@ public class BlackJack : MonoBehaviour
     public Cards Cards;
     public Image PlayerCard1;
     public Image DealerCard1;
-    public int bet = 100;
+    public int aktualnaStawka = 0;
     public bool isGameActive = false;
     public int playerScore = 0;
     public int dealerScore = 0;
@@ -24,17 +24,24 @@ public class BlackJack : MonoBehaviour
     public string luckPrefsKey = "PlayerLuck";
     public float defaultLuck = 0f;
     public float luck;
+    public Slider Bet_Size;
+    public Text BetScore;
 
     void Awake()
     {
         Cards = GetComponent<Cards>();
         PlayerCard1.gameObject.SetActive(false);
         DealerCard1.gameObject.SetActive(false);
+        if (Bet_Size != null)
+        {
+            aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
+            Bet_Size.onValueChanged.AddListener(Zmiana);
+            Zmiana(Bet_Size.value);
 
         if (luck <= 0f)
             luck = PlayerPrefs.GetFloat(luckPrefsKey, defaultLuck);
+        }
     }
-
     public void Bet()
     {
         if (isGameActive) return;
@@ -66,6 +73,16 @@ public class BlackJack : MonoBehaviour
         }
     }
 
+    public void Zmiana(float wartosc)
+    {
+        aktualnaStawka = Mathf.RoundToInt(wartosc);
+
+        if (BetScore != null)
+        {
+            BetScore.text = aktualnaStawka.ToString();
+        }
+    }
+
     public void Hit()
     {
         if (!isGameActive) return;
@@ -87,7 +104,7 @@ public class BlackJack : MonoBehaviour
     {
         if (!isGameActive) return;
         if (isHit) return;
-        bet *= 2;
+        aktualnaStawka *= 2;
         DrawCardForPlayer();
 
         if (playerScore > 21)
