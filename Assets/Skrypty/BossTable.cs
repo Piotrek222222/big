@@ -22,7 +22,7 @@ public class BossTable : MonoBehaviour
 
         if (player == null)
         {
-            Debug.LogError("Przypisz Gracz do pola Player.", this);
+            Debug.LogError("Przypisz obiekt gracza do pola Player.", this);
             enabled = false;
         }
     }
@@ -38,9 +38,10 @@ public class BossTable : MonoBehaviour
                 continue;
 
             Vector2 tablePosition = tables.GetCellCenterWorld(cell);
-            bool inRange = Vector2.Distance(playerPosition, tablePosition) <= interactionRange;
-            nearTable |= inRange;
+            bool inRange =
+                Vector2.Distance(playerPosition, tablePosition) <= interactionRange;
 
+            nearTable |= inRange;
             Color color = inRange ? highlightColor : Color.white;
 
             if (tables.GetColor(cell) != color)
@@ -55,7 +56,10 @@ public class BossTable : MonoBehaviour
 
         if (!Application.CanStreamedLevelBeLoaded(SceneName))
         {
-            Debug.LogError("Dodaj scenę BlackJack do Build Profiles → Scene List.", this);
+            Debug.LogError(
+                $"Dodaj scenę '{SceneName}' do Build Profiles → Scene List i ją zaznacz.",
+                this
+            );
             return;
         }
 

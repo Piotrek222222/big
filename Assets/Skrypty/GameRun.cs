@@ -7,8 +7,8 @@ public class GameRun : MonoBehaviour
 {
     public static GameRun Instance { get; private set; }
 
-    [SerializeField, Min(1f)] private float sessionDuration = 180f;
-    [SerializeField, Min(1)] private int startingQuota = 20;
+    [SerializeField, Min(1f)] private float sessionDuration = 90f;
+    [SerializeField, Min(1)] private int startingQuota = 85;
     [SerializeField, Min(0)] private int bossReward = 50;
     [SerializeField] private string pokerBossScene = "BossBattle";
     [SerializeField] private string newDayScene = "NowyDzien";
@@ -28,10 +28,10 @@ public class GameRun : MonoBehaviour
     private bool waitingForNextDay;
     private bool enteringBossFight;
 
+    private bool slotGuaranteeUsed;
     private double luckyEndsAt;
     private double moneyEndsAt;
     private float permanentLuckMultiplier = 1f;
-    private bool slotGuaranteeUsed;
 
     public int Day { get; private set; }
     public bool IsFinished { get; private set; }
@@ -43,8 +43,9 @@ public class GameRun : MonoBehaviour
     public int Cash => Money;
     public int BossReward => bossReward;
 
-    public int NextDueDay =>
-        Day > 0 && !IsFinished && !AwaitingPokerBoss ? Day : 0;
+    public int NextDueDay => Day > 0 && !IsFinished && !AwaitingPokerBoss
+        ? Day
+        : 0;
 
     public int NextPayment => NextDueDay > 0 ? dailyQuota : 0;
 
@@ -129,6 +130,24 @@ public class GameRun : MonoBehaviour
         Message = $"Your first daily quota is ${dailyQuota}.";
     }
 
+    public void RestartRun()
+{
+    string sceneToLoad = casinoScene;
+
+    if (string.IsNullOrWhiteSpace(sceneToLoad) ||
+        !Application.CanStreamedLevelBeLoaded(sceneToLoad))
+    {
+        Debug.LogError(
+            "Start the game using PLAY in MainMenu before restarting the run.",
+            this
+        );
+        return;
+    }
+
+    StartNewRun(sceneToLoad);
+    SceneManager.LoadScene(sceneToLoad);
+}
+
     public void ContinueDay()
     {
         if (!waitingForNextDay || IsFinished)
@@ -172,10 +191,12 @@ public class GameRun : MonoBehaviour
         if (!CasinoSessionActive || IsFinished || payout <= 0)
             return 0;
 
-        int credited = payout;
+        GameData data = GameData.PobierzLubUtworz();
+        bool moneyPotionActive = Time.unscaledTimeAsDouble < moneyEndsAt;
+        long requestedPayout = moneyPotionActive ? (long)payout * 2 : payout;
 
-        if (Time.unscaledTimeAsDouble < moneyEndsAt)
-            credited = (int)Math.Round(payout * 1.5d, MidpointRounding.AwayFromZero);
+        int availableSpace = int.MaxValue - data.SaldoGracza;
+        int credited = (int)Math.Min(requestedPayout, availableSpace);
 
         AddCash(credited);
         return credited;
@@ -190,12 +211,14 @@ public class GameRun : MonoBehaviour
 
     public void ActivateLuckyPotion()
     {
-        luckyEndsAt = Math.Max(luckyEndsAt, Time.unscaledTimeAsDouble) + PotionDuration;
+        luckyEndsAt = Math.Max(luckyEndsAt, Time.unscaledTimeAsDouble)
+            + PotionDuration;
     }
 
     public void ActivateMoneyPotion()
     {
-        moneyEndsAt = Math.Max(moneyEndsAt, Time.unscaledTimeAsDouble) + PotionDuration;
+        moneyEndsAt = Math.Max(moneyEndsAt, Time.unscaledTimeAsDouble)
+            + PotionDuration;
     }
 
     public void AddSmallLuckPotion()
@@ -214,59 +237,6 @@ public class GameRun : MonoBehaviour
             EndRun("GAME OVER! The Death potion ended your run.");
     }
 
-    public bool TryMatchThirdSlotSymbol()
-    {
-        float luck = EffectiveLuck;
-
-        if (luck >= 50f)
-        {
-            if (slotGuaranteeUsed)
-                return false;
-
-            slotGuaranteeUsed = true;
-            return true;
-        }
-
-        if (luck >= 40f) return RollLuck(15);
-        if (luck >= 30f) return RollLuck(10);
-        if (luck >= 20f) return RollLuck(5);
-
-        return false;
-    }
-
-    public bool TryRouletteReroll()
-    {
-        float luck = EffectiveLuck;
-
-        if (luck >= 70f) return RollLuck(8);
-        if (luck >= 60f) return RollLuck(6);
-        if (luck >= 50f) return RollLuck(4);
-        if (luck >= 40f) return RollLuck(3);
-        if (luck >= 30f) return RollLuck(2);
-        if (luck >= 20f) return RollLuck(1);
-
-        return false;
-    }
-
-    public bool TryBlackjackReroll()
-    {
-        float luck = EffectiveLuck;
-
-        if (luck >= 70f) return RollLuck(20);
-        if (luck >= 60f) return RollLuck(15);
-        if (luck >= 50f) return RollLuck(10);
-        if (luck >= 40f) return RollLuck(8);
-        if (luck >= 30f) return RollLuck(5);
-        if (luck >= 20f) return RollLuck(3);
-
-        return false;
-    }
-
-    private static bool RollLuck(int percent)
-    {
-        return UnityEngine.Random.Range(0, 100) < percent;
-    }
-
     public void EnterBossFight()
     {
         if (!AwaitingPokerBoss || IsFinished || enteringBossFight ||
@@ -278,7 +248,10 @@ public class GameRun : MonoBehaviour
         if (string.IsNullOrWhiteSpace(pokerBossScene) ||
             !Application.CanStreamedLevelBeLoaded(pokerBossScene))
         {
-            Debug.LogError($"Add '{pokerBossScene}' to the Build Profiles scene list.", this);
+            Debug.LogError(
+                $"Add '{pokerBossScene}' to the Build Profiles scene list.",
+                this
+            );
             return;
         }
 
@@ -376,12 +349,62 @@ public class GameRun : MonoBehaviour
         SceneManager.LoadScene(casinoScene);
     }
 
+    public bool TryMatchThirdSlotSymbol()
+    {
+        float luck = EffectiveLuck;
+
+        if (luck >= 50f)
+        {
+            if (slotGuaranteeUsed)
+                return false;
+
+            slotGuaranteeUsed = true;
+            return true;
+        }
+
+        if (luck >= 40f) return RollLuck(15);
+        if (luck >= 30f) return RollLuck(10);
+        if (luck >= 20f) return RollLuck(5);
+
+        return false;
+    }
+
+    public bool TryRouletteReroll()
+    {
+        float luck = EffectiveLuck;
+
+        if (luck < 20f)
+            return false;
+
+        int tier = Mathf.FloorToInt(Mathf.Min(luck, 70f) / 10f) - 1;
+        return RollLuck(tier * 5);
+    }
+
+    public bool TryBlackjackReroll()
+    {
+        float luck = EffectiveLuck;
+
+        if (luck >= 70f) return RollLuck(20);
+        if (luck >= 60f) return RollLuck(15);
+        if (luck >= 50f) return RollLuck(10);
+        if (luck >= 40f) return RollLuck(8);
+        if (luck >= 30f) return RollLuck(5);
+        if (luck >= 20f) return RollLuck(3);
+
+        return false;
+    }
+
+    private static bool RollLuck(int percent)
+    {
+        return percent > 0 && UnityEngine.Random.Range(0, 100) < percent;
+    }
+
     private void ResetDailyPotions()
     {
         soldBottles.Clear();
+        slotGuaranteeUsed = false;
         luckyEndsAt = 0d;
         moneyEndsAt = 0d;
-        slotGuaranteeUsed = false;
     }
 
     private void EndRun(string message)

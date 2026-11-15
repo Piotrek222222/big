@@ -4,93 +4,79 @@ using UnityEngine.SceneManagement;
 
 public class GameRunUI : MonoBehaviour
 {
-    [SerializeField] private string casinoScene = "save";
-    [SerializeField] private TMP_Text statusText;
     [SerializeField] private TMP_Text timerText;
+    [SerializeField] private TMP_Text dayCashText;
+
+    private const string CasinoSceneName = "save";
 
     private void LateUpdate()
     {
+        // Canvas w MainMenu może używać tego skryptu tylko do obsługi przycisku.
+        if (timerText == null && dayCashText == null)
+            return;
+
         GameRun run = GameRun.Instance;
-        bool hasRun = run != null && run.Day > 0;
 
-        if (statusText != null)
+        if (run == null || run.Day == 0)
         {
-            string status = "";
-
-            if (hasRun)
-            {
-                status = $"Day {run.Day} | Money: ${run.Money}\n" +
-                         $"Luck: {run.EffectiveLuck:0.##}";
-
-                if (!run.IsFinished)
-                    status += $"\nAllowance due: ${run.NextPayment} by the end of day {run.NextDueDay}";
-
-                if (!string.IsNullOrEmpty(run.Message))
-                    status += $"\n{run.Message}";
-            }
-
-            statusText.text = status;
+            SetText(timerText, "--:--");
+            SetText(dayCashText, run == null ? "GameRun missing" : "Run not started");
+            return;
         }
 
-        if (timerText != null)
+        int seconds = Mathf.CeilToInt(run.SecondsLeft);
+        SetText(timerText, $"{seconds / 60:00}:{seconds % 60:00}");
+
+        string status = $"Day {run.Day} | Cash ${run.Money} | Luck {run.EffectiveLuck:0.##}";
+
+        if (run.NextPayment > 0)
+            status += $"\nQuota ${run.NextPayment}";
+
+        if ((run.IsFinished || run.AwaitingPokerBoss) &&
+            !string.IsNullOrEmpty(run.Message))
         {
-            if (hasRun && run.CasinoSessionActive)
-            {
-                int seconds = Mathf.CeilToInt(run.SecondsLeft);
-                timerText.text = $"{seconds / 60:00}:{seconds % 60:00}";
-            }
-            else
-            {
-                timerText.text = "";
-            }
+            status += $"\n{run.Message}";
         }
+
+        SetText(dayCashText, status);
     }
 
     public void NewGame()
+    {
+        StartCasinoRun();
+    }
+
+    public void StartCasinoRun()
     {
         GameRun run = GameRun.Instance;
 
         if (run == null)
         {
-            Debug.LogError("Add a GameRun object to MainMenu.", this);
+            Debug.LogError("GameRun is missing from MainMenu.", this);
             return;
         }
 
-        if (!CanLoad(casinoScene))
+        if (!Application.CanStreamedLevelBeLoaded(CasinoSceneName))
+        {
+            Debug.LogError("Enable the 'save' scene in the build scene list.", this);
             return;
+        }
 
-        run.StartNewRun(casinoScene);
-        SceneManager.LoadScene(casinoScene);
+        run.StartNewRun(CasinoSceneName);
+        SceneManager.LoadScene(CasinoSceneName);
     }
 
-    public void GoToCasino()
+    public void ContinueDay()
     {
         GameRun run = GameRun.Instance;
 
-        if (run != null && run.CasinoSessionActive &&
-            run.SecondsLeft > 0f && CanLoad(casinoScene))
-        {
-            SceneManager.LoadScene(casinoScene);
-        }
+        if (run != null)
+            run.ContinueDay();
     }
 
-    public void GoToMenu()
+    private static void SetText(TMP_Text label, string value)
     {
-        GameRun run = GameRun.Instance;
-
-        if ((run == null || !run.CasinoSessionActive) && CanLoad("MainMenu"))
-            SceneManager.LoadScene("MainMenu");
-    }
-
-    private bool CanLoad(string sceneName)
-    {
-        if (!string.IsNullOrWhiteSpace(sceneName) &&
-            Application.CanStreamedLevelBeLoaded(sceneName))
-        {
-            return true;
-        }
-
-        Debug.LogError($"Add scene '{sceneName}' to the Build Profiles scene list.", this);
-        return false;
+        if (label != null && label.text != value)
+            label.text = value;
     }
 }
