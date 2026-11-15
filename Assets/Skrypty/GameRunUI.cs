@@ -8,6 +8,7 @@ public class GameRunUI : MonoBehaviour
     [SerializeField] private TMP_Text dayCashText;
 
     private const string CasinoSceneName = "save";
+    private const string CutsceneSceneName = "Cutscene";
 
     private void LateUpdate()
     {
@@ -43,6 +44,14 @@ public class GameRunUI : MonoBehaviour
 
     public void NewGame()
     {
+        // The opening cutscene leads into the casino run.
+        if (Application.CanStreamedLevelBeLoaded(CutsceneSceneName))
+        {
+            SceneManager.LoadScene(CutsceneSceneName);
+            return;
+        }
+
+        // Fallback for when the cutscene scene is missing from the build.
         StartCasinoRun();
     }
 
