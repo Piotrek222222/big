@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class AudioManager : MonoBehaviour
 {
@@ -21,6 +22,7 @@ public class AudioManager : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
@@ -28,16 +30,49 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+    }
+
     void Start()
     {
-        SetMusic(0);
+        SprawdzMuzykeDlaSceny(SceneManager.GetActiveScene().name);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SprawdzMuzykeDlaSceny(scene.name);
+    }
+
+    private void SprawdzMuzykeDlaSceny(string nazwaSceny)
+    {
+        if (nazwaSceny == "BossBattle" || nazwaSceny == "Dices")
+        {
+            SetMusic(1);
+        }
+        else
+        {
+            SetMusic(0);
+        }
     }
 
     public void SetMusic(int index)
     {
         if (index >= 0 && index < Music.Count)
         {
-            MusicSource.clip = Music[index];
+            if (MusicSource.clip != Music[index])
+            {
+                MusicSource.clip = Music[index];
+                MusicSource.loop = true;
+                MusicSource.Play();
+                isPlaying = true;
+                Music_number = index;
+                return;
+            }
         }
         if (MusicSource.isPlaying == false)
         {
