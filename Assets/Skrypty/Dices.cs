@@ -65,6 +65,11 @@ public class Dices : MonoBehaviour
     private bool czyKliknietoRoll = false;
     private int postawionaKwotaGracza = 0;
 
+
+    private void Start()
+    {
+        GameStart();
+    }
     public void GameStart()
     {
         float mnoznikBossa = 1f;
