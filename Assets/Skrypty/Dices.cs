@@ -50,8 +50,7 @@ public class Dices : MonoBehaviour
     public int stawkaZakladu = 10;
     public TypProp wybranyProp = TypProp.AnySeven;
     public TMP_Dropdown propDropdown;
-    public TMP_Text yourBetText;
-    public TMP_Text bossBetText;
+    public TMP_Text saldoBossaText;
     public Zaklad aktualnyZaklad;
     public Zaklad aktualnyZakladBossa;
 
@@ -80,22 +79,27 @@ public class Dices : MonoBehaviour
         }
 
         SaldoBossa = Mathf.RoundToInt(GameRun.Instance.Money * mnoznikBossa);
+        AktualizujSaldoBossa();
         UstawListeProp();
         StartCoroutine(KolejnoscTury());
+    }
+
+    private void AktualizujSaldoBossa()
+    {
+        if (saldoBossaText != null)
+        {
+            saldoBossaText.text = $"${SaldoBossa}";
+        }
     }
 
     private IEnumerator KolejnoscTury()
     {
         while (GameData.PobierzLubUtworz().SaldoGracza > 0 && SaldoBossa > 0)
         {
-            if (yourBetText != null) yourBetText.text = "Your bet: -";
-            if (bossBetText != null) bossBetText.text = "Boss bet: -";
-
             yield return StartCoroutine(CzekajNaPrzycisk());
-            AktualizujTekstZakladu(yourBetText, "Your bet", aktualnyZaklad);
 
             BossTurn();
-            AktualizujTekstZakladu(bossBetText, "Boss bet", aktualnyZakladBossa);
+            AktualizujSaldoBossa();
 
             yield return StartCoroutine(PrzebiegGry());
 
@@ -112,20 +116,6 @@ public class Dices : MonoBehaviour
         else
         {
             GameRun.Instance.ResolvePokerBoss(false);
-        }
-    }
-
-    private void AktualizujTekstZakladu(TMP_Text poleTekstu, string naglowek, Zaklad zaklad)
-    {
-        if (poleTekstu == null) return;
-
-        if (zaklad.typ == TypZakladu.Prop)
-        {
-            poleTekstu.text = $"{naglowek}: Prop ({zaklad.prop}) - ${zaklad.kwota}";
-        }
-        else
-        {
-            poleTekstu.text = $"{naglowek}: {zaklad.typ} - ${zaklad.kwota}";
         }
     }
 
@@ -446,5 +436,6 @@ public class Dices : MonoBehaviour
     {
         int wygrana = ObliczWyplate(aktualnyZakladBossa);
         SaldoBossa += wygrana;
+        AktualizujSaldoBossa();
     }
 }
