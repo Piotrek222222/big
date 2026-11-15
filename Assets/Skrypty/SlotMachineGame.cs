@@ -16,7 +16,7 @@ public class SlotMachineGame : MonoBehaviour
     [SerializeField] private Image symbol3;
     [SerializeField] private Sprite[] symbols;
     [SerializeField] private TMP_Text resultText;
-    [SerializeField] private int winSoundIndex = 0; // Numer dźwięku wygranej na liście SFX w AudioManager
+    [SerializeField] private int winSoundIndex = 0;
 
     private const int SpinCost = 10;
     private const int WinPayout = 300;
@@ -76,10 +76,33 @@ public class SlotMachineGame : MonoBehaviour
         Sprite second = symbols[Random.Range(0, symbols.Length)];
         Sprite third = symbols[Random.Range(0, symbols.Length)];
 
-        bool win = first == second && second == third;
+        if (second != first && TryMatchSecondSymbol(run.EffectiveLuck))
+        {
+            second = first;
+        }
 
-        // Przekazujemy samo 'win' – pieniądze dopiszemy dopiero po odsłonięciu bębnów
+        if (first == second && third != first && run.TryMatchThirdSlotSymbol())
+        {
+            third = first;
+        }
+
+        bool win = first == second && second == third;
         StartCoroutine(RevealSymbols(first, second, third, win));
+    }
+
+    private static bool TryMatchSecondSymbol(float luck)
+    {
+        if (luck < 30f)
+            return false;
+
+        int chance = 5;
+
+        if (luck >= 50f)
+            chance = 15;
+        else if (luck >= 40f)
+            chance = 10;
+
+        return Random.Range(0, 100) < chance;
     }
 
     private IEnumerator RevealSymbols(Sprite first, Sprite second, Sprite third, bool win)
@@ -104,10 +127,11 @@ public class SlotMachineGame : MonoBehaviour
         yield return delay;
         Reveal(symbol3, third);
 
-        // Dopiero tutaj (po 3 sekundach) dopisujemy wygraną i odpalamy dźwięk
         if (win)
         {
-            int payout = GameRun.Instance != null ? GameRun.Instance.CreditWin(WinPayout) : WinPayout;
+            int payout = GameRun.Instance != null
+                ? GameRun.Instance.CreditWin(WinPayout)
+                : WinPayout;
 
             if (AudioManager.instance != null)
             {
