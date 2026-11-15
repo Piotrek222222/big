@@ -17,7 +17,9 @@ public class Bar : MonoBehaviour
 
     private Tilemap barTilemap;
     private bool highlighted;
-    private readonly Dictionary<Vector3Int, Color> originalColors = new();
+
+    private readonly Dictionary<Vector3Int, Color> originalColors =
+        new Dictionary<Vector3Int, Color>();
 
     private void Awake()
     {
@@ -62,7 +64,10 @@ public class Bar : MonoBehaviour
         if (string.IsNullOrWhiteSpace(sceneName) ||
             !Application.CanStreamedLevelBeLoaded(sceneName))
         {
-            Debug.LogError($"Add scene '{sceneName}' to the Build Profiles scene list.", this);
+            Debug.LogError(
+                $"Add scene '{sceneName}' to the Build Profiles scene list.",
+                this
+            );
             return;
         }
 
@@ -91,7 +96,7 @@ public class Bar : MonoBehaviour
     private static bool PressedE()
     {
 #if ENABLE_INPUT_SYSTEM
-        var keyboard = Keyboard.current;
+        Keyboard keyboard = Keyboard.current;
         return keyboard != null && keyboard.eKey.wasPressedThisFrame;
 #else
         return Input.GetKeyDown(KeyCode.E);
