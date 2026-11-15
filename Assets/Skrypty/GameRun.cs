@@ -8,7 +8,7 @@ public class GameRun : MonoBehaviour
     public static GameRun Instance { get; private set; }
 
     [SerializeField, Min(1f)] private float sessionDuration = 180f;
-    [SerializeField, Min(1)] private int startingQuota = 20;
+    [SerializeField, Min(1)] private int startingQuota = 50;
     [SerializeField, Min(0)] private int bossReward = 50;
 
     [SerializeField] private string pokerBossScene = "BossBattle";
@@ -16,7 +16,7 @@ public class GameRun : MonoBehaviour
     [SerializeField] private string newDayScene = "NowyDzien";
     [SerializeField] private string gameOverScene = "GameOver";
 
-    private const int DailyMoney = 50;
+    private const int DailyMoney = 20;
     private const float StartingLuck = 10f;
     private const int BossInterval = 3;
     private const int FinalDay = 9;
@@ -304,6 +304,7 @@ public class GameRun : MonoBehaviour
         if (Day == FinalDay)
         {
             EndRun($"YOU WIN! Final boss defeated. Reward: ${bossReward}.");
+            SceneManager.LoadScene("Win");
             return;
         }
 
