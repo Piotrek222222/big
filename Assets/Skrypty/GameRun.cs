@@ -7,11 +7,14 @@ public class GameRun : MonoBehaviour
 {
     public static GameRun Instance { get; private set; }
 
-    [SerializeField, Min(1f)] private float sessionDuration = 90f;
-    [SerializeField, Min(1)] private int startingQuota = 85;
+    [SerializeField, Min(1f)] private float sessionDuration = 180f;
+    [SerializeField, Min(1)] private int startingQuota = 20;
     [SerializeField, Min(0)] private int bossReward = 50;
+
     [SerializeField] private string pokerBossScene = "BossBattle";
+    [SerializeField] private string bossDuelScene = "Dices";
     [SerializeField] private string newDayScene = "NowyDzien";
+    [SerializeField] private string gameOverScene = "GameOver";
 
     private const int DailyMoney = 50;
     private const float StartingLuck = 10f;
@@ -63,8 +66,9 @@ public class GameRun : MonoBehaviour
         get
         {
             float baseLuck = GameData.PobierzLubUtworz().Luck;
-            float temporaryMultiplier =
-                Time.unscaledTimeAsDouble < luckyEndsAt ? 2f : 1f;
+            float temporaryMultiplier = Time.unscaledTimeAsDouble < luckyEndsAt
+                ? 2f
+                : 1f;
 
             return baseLuck * permanentLuckMultiplier * temporaryMultiplier;
         }
@@ -81,6 +85,22 @@ public class GameRun : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void Start()
+    {
+#if UNITY_EDITOR
+        if (Instance != this || Day != 0)
+            return;
+
+        Scene activeScene = SceneManager.GetActiveScene();
+
+        if (activeScene.name == "save")
+        {
+            StartNewRun(activeScene.name);
+            OnSceneLoaded(activeScene, LoadSceneMode.Single);
+        }
+#endif
     }
 
     private void OnDestroy()
@@ -131,22 +151,19 @@ public class GameRun : MonoBehaviour
     }
 
     public void RestartRun()
-{
-    string sceneToLoad = casinoScene;
-
-    if (string.IsNullOrWhiteSpace(sceneToLoad) ||
-        !Application.CanStreamedLevelBeLoaded(sceneToLoad))
     {
-        Debug.LogError(
-            "Start the game using PLAY in MainMenu before restarting the run.",
-            this
-        );
-        return;
-    }
+        string sceneToLoad = casinoScene;
 
-    StartNewRun(sceneToLoad);
-    SceneManager.LoadScene(sceneToLoad);
-}
+        if (string.IsNullOrWhiteSpace(sceneToLoad) ||
+            !Application.CanStreamedLevelBeLoaded(sceneToLoad))
+        {
+            Debug.LogError("Nie można załadować sceny kasyna.", this);
+            return;
+        }
+
+        StartNewRun(sceneToLoad);
+        SceneManager.LoadScene(sceneToLoad);
+    }
 
     public void ContinueDay()
     {
@@ -163,7 +180,7 @@ public class GameRun : MonoBehaviour
         if (Day == 0 || IsFinished)
             return;
 
-        EndRun("GAME OVER! You ran out of money.");
+        EndRun("GAME OVER! You ran out of money.", showGameOverScene: true);
     }
 
     public bool TrySpend(int amount)
@@ -194,7 +211,6 @@ public class GameRun : MonoBehaviour
         GameData data = GameData.PobierzLubUtworz();
         bool moneyPotionActive = Time.unscaledTimeAsDouble < moneyEndsAt;
         long requestedPayout = moneyPotionActive ? (long)payout * 2 : payout;
-
         int availableSpace = int.MaxValue - data.SaldoGracza;
         int credited = (int)Math.Min(requestedPayout, availableSpace);
 
@@ -202,7 +218,10 @@ public class GameRun : MonoBehaviour
         return credited;
     }
 
-    public bool IsBottleSold(int index) => soldBottles.Contains(index);
+    public bool IsBottleSold(int index)
+    {
+        return soldBottles.Contains(index);
+    }
 
     public void MarkBottleSold(int index)
     {
@@ -249,7 +268,7 @@ public class GameRun : MonoBehaviour
             !Application.CanStreamedLevelBeLoaded(pokerBossScene))
         {
             Debug.LogError(
-                $"Add '{pokerBossScene}' to the Build Profiles scene list.",
+                $"Dodaj scenę '{pokerBossScene}' do Build Profiles.",
                 this
             );
             return;
@@ -262,7 +281,7 @@ public class GameRun : MonoBehaviour
     public void ResolvePokerBoss(bool won)
     {
         if (!AwaitingPokerBoss || IsFinished ||
-            SceneManager.GetActiveScene().name != "Dices")
+            SceneManager.GetActiveScene().name != bossDuelScene)
         {
             return;
         }
@@ -272,7 +291,11 @@ public class GameRun : MonoBehaviour
 
         if (!won)
         {
-            EndRun("GAME OVER! You lost the dice duel.");
+            if (Money <= 0)
+                OnBalanceDepleted();
+            else
+                EndRun("GAME OVER! You lost the dice duel.");
+
             return;
         }
 
@@ -283,8 +306,8 @@ public class GameRun : MonoBehaviour
             EndRun($"YOU WIN! Final boss defeated. Reward: ${bossReward}.");
             return;
         }
+
         Message = $"Boss defeated! Reward: ${bossReward}.";
-        GameData.PobierzLubUtworz().SaldoGracza=50*(Day/3);
         StartNextDay();
     }
 
@@ -407,7 +430,7 @@ public class GameRun : MonoBehaviour
         moneyEndsAt = 0d;
     }
 
-    private void EndRun(string message)
+    private void EndRun(string message, bool showGameOverScene = false)
     {
         IsFinished = true;
         CasinoSessionActive = false;
@@ -417,6 +440,24 @@ public class GameRun : MonoBehaviour
         startTimerOnCasinoLoad = false;
         Message = message;
 
-        SceneManager.LoadScene(casinoScene);
+        string destination = casinoScene;
+
+        if (showGameOverScene)
+        {
+            if (!string.IsNullOrWhiteSpace(gameOverScene) &&
+                Application.CanStreamedLevelBeLoaded(gameOverScene))
+            {
+                destination = gameOverScene;
+            }
+            else
+            {
+                Debug.LogError(
+                    $"Dodaj scenę '{gameOverScene}' do Build Profiles i ją zaznacz.",
+                    this
+                );
+            }
+        }
+
+        SceneManager.LoadScene(destination);
     }
 }
