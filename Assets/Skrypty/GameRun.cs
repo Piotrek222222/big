@@ -8,19 +8,24 @@ public class GameRun : MonoBehaviour
     public static GameRun Instance { get; private set; }
 
     [SerializeField, Min(1f)] private float sessionDuration = 180f;
+    [SerializeField, Min(1)] private int startingQuota = 20;
+    [SerializeField, Min(0)] private int bossReward = 50;
+    [SerializeField] private string pokerBossScene = "BossBattle";
+    [SerializeField] private string newDayScene = "NowyDzien";
 
-    private const int StartingMoney = 60;
-    private const int DaysBetweenPayments = 3;
+    private const int DailyMoney = 60;
+    private const int BossInterval = 3;
+    private const int FinalDay = 9;
     private const double PotionDuration = 30d;
-    private static readonly int[] Payments = { 100, 175, 275 };
 
-    // Intermission screen shown after every in-game day.
-    public const string NowyDzienScene = "NowyDzien";
     private readonly HashSet<int> soldBottles = new HashSet<int>();
 
     private string casinoScene;
+    private int dailyQuota;
     private double sessionEndsAt;
     private bool startTimerOnCasinoLoad;
+    private bool waitingForNextDay;
+    private bool enteringBossFight;
 
     private double luckyEndsAt;
     private double moneyEndsAt;
@@ -29,30 +34,35 @@ public class GameRun : MonoBehaviour
     public int Day { get; private set; }
     public bool IsFinished { get; private set; }
     public bool CasinoSessionActive { get; private set; }
+    public bool AwaitingPokerBoss { get; private set; }
     public string Message { get; private set; } = "";
 
     public int Money => GameData.PobierzLubUtworz().SaldoGracza;
     public int Cash => Money;
+    public int BossReward => bossReward;
 
-    public int NextDueDay => Day == 0 || IsFinished
-        ? 0
-        : ((Day - 1) / DaysBetweenPayments + 1) * DaysBetweenPayments;
-
-    public int NextPayment => Day == 0 || IsFinished
-        ? 0
-        : Payments[(Day - 1) / DaysBetweenPayments];
+    public int NextDueDay => Day > 0 && !IsFinished && !AwaitingPokerBoss ? Day : 0;
+    public int NextPayment => NextDueDay > 0 ? dailyQuota : 0;
 
     public float SecondsLeft => CasinoSessionActive
         ? Mathf.Max(0f, (float)(sessionEndsAt - Time.unscaledTimeAsDouble))
         : 0f;
+
+    public bool CanUseCasino => CasinoSessionActive &&
+                                !IsFinished &&
+                                !AwaitingPokerBoss &&
+                                SecondsLeft > 0f;
 
     public float EffectiveLuck
     {
         get
         {
             float baseLuck = GameData.PobierzLubUtworz().Luck;
-            float luckyMultiplier = Time.unscaledTimeAsDouble < luckyEndsAt ? 2f : 1f;
-            return baseLuck * permanentLuckMultiplier * luckyMultiplier;
+            float temporaryMultiplier = Time.unscaledTimeAsDouble < luckyEndsAt
+                ? 2f
+                : 1f;
+
+            return baseLuck * permanentLuckMultiplier * temporaryMultiplier;
         }
     }
 
@@ -80,6 +90,15 @@ public class GameRun : MonoBehaviour
 
     private void Update()
     {
+        if (Day == 0 || IsFinished)
+            return;
+
+        if (Money <= 0)
+        {
+            OnBalanceDepleted();
+            return;
+        }
+
         if (CasinoSessionActive && SecondsLeft <= 0f)
             FinishDay();
     }
@@ -88,23 +107,43 @@ public class GameRun : MonoBehaviour
     {
         casinoScene = startingCasinoScene;
         Day = 1;
+        dailyQuota = startingQuota;
+
         IsFinished = false;
         CasinoSessionActive = false;
+        AwaitingPokerBoss = false;
+        waitingForNextDay = false;
+        enteringBossFight = false;
         startTimerOnCasinoLoad = true;
 
-        soldBottles.Clear();
-        luckyEndsAt = 0d;
-        moneyEndsAt = 0d;
+        ResetDailyPotions();
         permanentLuckMultiplier = 1f;
 
-        GameData.PobierzLubUtworz().SaldoGracza = StartingMoney;
-        Message = "Your first allowance payment is due at the end of day 3.";
-        Message = "";
+        GameData.PobierzLubUtworz().SaldoGracza = DailyMoney;
+        Message = $"Your first daily quota is ${dailyQuota}.";
+    }
+
+    public void ContinueDay()
+    {
+        if (!waitingForNextDay || IsFinished)
+            return;
+
+        waitingForNextDay = false;
+        startTimerOnCasinoLoad = true;
+        SceneManager.LoadScene(casinoScene);
+    }
+
+    public void OnBalanceDepleted()
+    {
+        if (Day == 0 || IsFinished)
+            return;
+
+        EndRun("GAME OVER! You ran out of money.");
     }
 
     public bool TrySpend(int amount)
     {
-        if (!CasinoSessionActive || SecondsLeft <= 0f || amount <= 0)
+        if (!CanUseCasino || amount <= 0)
             return false;
 
         GameData data = GameData.PobierzLubUtworz();
@@ -113,21 +152,20 @@ public class GameRun : MonoBehaviour
             return false;
 
         data.SaldoGracza -= amount;
-        return true;
+
+        // An action that spends the last dollar ends the run.
+        return !IsFinished;
     }
 
     public void AddCash(int amount)
     {
-        if (!CasinoSessionActive || amount <= 0)
-            return;
-
-        GameData data = GameData.PobierzLubUtworz();
-        data.SaldoGracza += amount;
+        if (CasinoSessionActive && !IsFinished && amount > 0)
+            GameData.PobierzLubUtworz().SaldoGracza += amount;
     }
 
     public int CreditWin(int payout)
     {
-        if (!CasinoSessionActive || payout <= 0)
+        if (!CasinoSessionActive || IsFinished || payout <= 0)
             return 0;
 
         int credited = payout;
@@ -148,14 +186,17 @@ public class GameRun : MonoBehaviour
 
     public void ActivateLuckyPotion()
     {
-        luckyEndsAt = Math.Max(luckyEndsAt, Time.unscaledTimeAsDouble)
-                      + PotionDuration;
+        luckyEndsAt = Math.Max(luckyEndsAt, Time.unscaledTimeAsDouble) + PotionDuration;
     }
 
     public void ActivateMoneyPotion()
     {
-        moneyEndsAt = Math.Max(moneyEndsAt, Time.unscaledTimeAsDouble)
-                      + PotionDuration;
+        moneyEndsAt = Math.Max(moneyEndsAt, Time.unscaledTimeAsDouble) + PotionDuration;
+    }
+
+    public void AddSmallLuckPotion()
+    {
+        GameData.PobierzLubUtworz().Luck += 10f;
     }
 
     public void DoublePermanentLuck()
@@ -165,14 +206,56 @@ public class GameRun : MonoBehaviour
 
     public void EndRunFromDeathPotion()
     {
-        if (!CasinoSessionActive || IsFinished)
-            return;
+        if (CasinoSessionActive && !IsFinished)
+            EndRun("GAME OVER! The Death potion ended your run.");
+    }
 
-        IsFinished = true;
-        CasinoSessionActive = false;
-        startTimerOnCasinoLoad = false;
-        Message = "GAME OVER! The Death potion ended your run.";
-        SceneManager.LoadScene(casinoScene);
+    public void EnterBossFight()
+    {
+        if (!AwaitingPokerBoss || IsFinished || enteringBossFight ||
+            SceneManager.GetActiveScene().name != casinoScene)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(pokerBossScene) ||
+            !Application.CanStreamedLevelBeLoaded(pokerBossScene))
+        {
+            Debug.LogError($"Add '{pokerBossScene}' to the Build Profiles scene list.", this);
+            return;
+        }
+
+        enteringBossFight = true;
+        SceneManager.LoadScene(pokerBossScene);
+    }
+
+    public void ResolvePokerBoss(bool won)
+    {
+        if (!AwaitingPokerBoss || IsFinished ||
+            SceneManager.GetActiveScene().name != pokerBossScene)
+        {
+            return;
+        }
+
+        AwaitingPokerBoss = false;
+        enteringBossFight = false;
+
+        if (!won)
+        {
+            EndRun("GAME OVER! You lost the dice duel.");
+            return;
+        }
+
+        GameData.PobierzLubUtworz().SaldoGracza += bossReward;
+
+        if (Day == FinalDay)
+        {
+            EndRun($"YOU WIN! Final boss defeated. Reward: ${bossReward}.");
+            return;
+        }
+
+        Message = $"Boss defeated! Reward: ${bossReward}.";
+        StartNextDay();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -188,58 +271,72 @@ public class GameRun : MonoBehaviour
     private void FinishDay()
     {
         CasinoSessionActive = false;
-        Message = "Time's up. A new day begins.";
+        GameData data = GameData.PobierzLubUtworz();
 
-        if (Day == NextDueDay)
+        if (data.SaldoGracza < dailyQuota)
         {
-            int payment = NextPayment;
-            GameData data = GameData.PobierzLubUtworz();
-
-            if (data.SaldoGracza < payment)
-            {
-                IsFinished = true;
-                Message = $"GAME OVER! You are ${payment - data.SaldoGracza} short.";
-            }
-            else
-            {
-                data.SaldoGracza -= payment;
-                IsFinished = Day == Payments.Length * DaysBetweenPayments;
-                Message = IsFinished
-                    ? "YOU WIN! You paid all the allowances."
-                    : $"Allowance paid: ${payment}.";
-            }
+            int missing = dailyQuota - data.SaldoGracza;
+            EndRun($"GAME OVER! You are ${missing} short of the daily quota.");
+            return;
         }
 
-        if (!IsFinished)
+        data.SaldoGracza -= dailyQuota;
+
+        // The balance setter ends the run if the quota leaves $0.
+        if (IsFinished)
+            return;
+
+        Message = $"Daily quota paid: ${dailyQuota}.";
+
+        if (Day % BossInterval == 0)
         {
-            Day++;
-            startTimerOnCasinoLoad = true;
+            AwaitingPokerBoss = true;
+            Message += "\nThe casino is locked. Find the Boss Battle door.";
+            SceneManager.LoadScene(casinoScene);
+            return;
         }
 
-        // Go through the intermission screen. It continues to the casino,
-        // where the timer for the next day starts (startTimerOnCasinoLoad).
-        SceneManager.LoadScene(
-            Application.CanStreamedLevelBeLoaded(NowyDzienScene)
-                ? NowyDzienScene
-                : casinoScene);
+        StartNextDay();
     }
 
-    /// <summary>
-    /// Called by the intermission screen ("NowyDzien") to start the next
-    /// casino day. The day timer starts once the casino scene has loaded.
-    /// </summary>
-    public bool ContinueDay()
+    private void StartNextDay()
     {
-        if (IsFinished || CasinoSessionActive)
-            return false;
+        Day++;
+        dailyQuota = Mathf.CeilToInt(dailyQuota * 1.5f);
+        ResetDailyPotions();
 
-        if (!Application.CanStreamedLevelBeLoaded(casinoScene))
+        GameData.PobierzLubUtworz().SaldoGracza += DailyMoney;
+        Message += $"\nDay {Day} starting money: +${DailyMoney}.";
+
+        if (!string.IsNullOrWhiteSpace(newDayScene) &&
+            Application.CanStreamedLevelBeLoaded(newDayScene))
         {
-            Debug.LogError($"Add scene '{casinoScene}' to the Build Profiles scene list.", this);
-            return false;
+            waitingForNextDay = true;
+            SceneManager.LoadScene(newDayScene);
+            return;
         }
 
+        startTimerOnCasinoLoad = true;
         SceneManager.LoadScene(casinoScene);
-        return true;
+    }
+
+    private void ResetDailyPotions()
+    {
+        soldBottles.Clear();
+        luckyEndsAt = 0d;
+        moneyEndsAt = 0d;
+    }
+
+    private void EndRun(string message)
+    {
+        IsFinished = true;
+        CasinoSessionActive = false;
+        AwaitingPokerBoss = false;
+        waitingForNextDay = false;
+        enteringBossFight = false;
+        startTimerOnCasinoLoad = false;
+        Message = message;
+
+        SceneManager.LoadScene(casinoScene);
     }
 }

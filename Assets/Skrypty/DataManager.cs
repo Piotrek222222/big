@@ -7,7 +7,6 @@ public class GameData : MonoBehaviour
     [Header("Zmienne globalne")]
     [SerializeField] private int domyslneSaldo = 10000;
     [SerializeField] private float domyslnyLuck = 0f;
-
     [SerializeField] private int saldoGracza = 10000;
     [SerializeField] private float luck = 0f;
 
@@ -16,9 +15,14 @@ public class GameData : MonoBehaviour
         get => saldoGracza;
         set
         {
-            saldoGracza = value;
+            saldoGracza = Mathf.Max(0, value);
             PlayerPrefs.SetInt("Global_Saldo", saldoGracza);
             PlayerPrefs.Save();
+
+            GameRun run = GameRun.Instance;
+
+            if (saldoGracza == 0 && run != null)
+                run.OnBalanceDepleted();
         }
     }
 
@@ -33,23 +37,20 @@ public class GameData : MonoBehaviour
         }
     }
 
-    // Automatycznie tworzy GameData, jeśli odpalisz scenę z ruletką bezpośrednio w edytorze
     public static GameData PobierzLubUtworz()
     {
-        if (Instance == null)
+        if (Instance != null)
+            return Instance;
+
+        GameData existing = FindFirstObjectByType<GameData>();
+
+        if (existing != null)
         {
-            GameData istniejacy = FindObjectOfType<GameData>();
-            if (istniejacy != null)
-            {
-                Instance = istniejacy;
-            }
-            else
-            {
-                GameObject go = new GameObject("GameData (Auto)");
-                Instance = go.AddComponent<GameData>();
-            }
+            Instance = existing;
+            return existing;
         }
-        return Instance;
+
+        return new GameObject("GameData (Auto)").AddComponent<GameData>();
     }
 
     private void Awake()
@@ -62,13 +63,18 @@ public class GameData : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
         WczytajDane();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     public void WczytajDane()
     {
-        saldoGracza = PlayerPrefs.GetInt("Global_Saldo", domyslneSaldo);
+        saldoGracza = Mathf.Max(0, PlayerPrefs.GetInt("Global_Saldo", domyslneSaldo));
         luck = PlayerPrefs.GetFloat("Global_Luck", domyslnyLuck);
     }
 
@@ -76,8 +82,10 @@ public class GameData : MonoBehaviour
     {
         PlayerPrefs.DeleteKey("Global_Saldo");
         PlayerPrefs.DeleteKey("Global_Luck");
-        saldoGracza = domyslneSaldo;
+
+        saldoGracza = Mathf.Max(0, domyslneSaldo);
         luck = domyslnyLuck;
+
         PlayerPrefs.Save();
     }
 }
