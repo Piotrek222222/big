@@ -199,6 +199,7 @@ MonoBehaviour:
   - {fileID: 4082474446782044660, guid: 4ade94188c0afe34e88060baded07122, type: 3}
   - {fileID: 4082474446782044660, guid: 4ade94188c0afe34e88060baded07122, type: 3}
   resultText: {fileID: 387425665}
+  winSoundIndex: 0
 --- !u!114 &53461534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -834,7 +835,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 909454856004693264, guid: 17ba387d26730c843835478780a04e36, type: 3}
+  m_Sprite: {fileID: 909454856004693264, guid: 7c2662adb80a86b408da8797aea048dd, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
