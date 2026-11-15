@@ -284,6 +284,7 @@ public class GameRun : MonoBehaviour
             return;
         }
         Message = $"Boss defeated! Reward: ${bossReward}.";
+        GameData.PobierzLubUtworz().SaldoGracza=50*(Day/3);
         StartNextDay();
     }
 

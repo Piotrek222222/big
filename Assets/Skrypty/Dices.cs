@@ -1,8 +1,8 @@
-using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class Dices : MonoBehaviour
 {
@@ -47,59 +47,125 @@ public class Dices : MonoBehaviour
     public int SaldoBossa;
     public List<Sprite> walls = new List<Sprite>();
 
-    public int stawkaZakladu = 10;
+    public int stawkaZakladu;
     public TypProp wybranyProp = TypProp.AnySeven;
     public TMP_Dropdown propDropdown;
     public TMP_Text saldoBossaText;
+    public TMP_Text saldoGraczaText;
     public Zaklad aktualnyZaklad;
     public Zaklad aktualnyZakladBossa;
 
     public Button przycisk1;
     public Button przycisk2;
     public Button przycisk3;
-    private int wybranyPrzycisk = -1;
-
     public Button rollButton;
+
     public int point;
     public List<int> historiaWynikow = new List<int>();
-    private bool czyKliknietoRoll = false;
-    private int postawionaKwotaGracza = 0;
 
+    private static readonly TypProp[] DostepnePropy =
+        (TypProp[])System.Enum.GetValues(typeof(TypProp));
+
+    private int wybranyPrzycisk = -1;
+    private bool czyKliknietoRoll;
+    private int postawionaKwotaGracza;
+    private int saldoGraczaPrzedZakladem;
 
     private void Start()
     {
         GameStart();
     }
+
     public void GameStart()
     {
-        float mnoznikBossa = 1f;
+        GameRun run = GameRun.Instance;
 
-        if (GameRun.Instance.Day == 6)
+        if (run == null)
         {
-            mnoznikBossa = 1.5f;
-        }
-        else if (GameRun.Instance.Day == 9)
-        {
-            mnoznikBossa = 2f;
+            Debug.LogError("Uruchom pojedynek z pokoju bossa.", this);
+            return;
         }
 
-        SaldoBossa = Mathf.RoundToInt(GameRun.Instance.Money * mnoznikBossa);
+        int saldoStartoweGracza = run.Money;
+        stawkaZakladu = Mathf.Max(1, saldoStartoweGracza / 5);
+
+        float mnoznikSaldaBossa = 1f;
+
+        if (run.Day == 6)
+            mnoznikSaldaBossa = 1.5f;
+        else if (run.Day == 9)
+            mnoznikSaldaBossa = 2f;
+
+        SaldoBossa = Mathf.RoundToInt(saldoStartoweGracza * mnoznikSaldaBossa);
+
+        AktualizujSaldoGracza();
         AktualizujSaldoBossa();
         UstawListeProp();
         StartCoroutine(KolejnoscTury());
     }
 
+    private void AktualizujSaldoGracza()
+    {
+        if (saldoGraczaText == null)
+            return;
+
+        // Podczas all-in zapisane $1 pozwala dokończyć rundę.
+        int saldo = postawionaKwotaGracza > 0
+            ? 0
+            : GameData.PobierzLubUtworz().SaldoGracza;
+
+        int nastepnaStawka = SaldoBossa > 0
+            ? Mathf.Min(stawkaZakladu, saldo)
+            : 0;
+
+        saldoGraczaText.text = $"${saldo}\nNext stake: ${nastepnaStawka}";
+    }
+
     private void AktualizujSaldoBossa()
     {
-        if (saldoBossaText != null)
-        {
-            saldoBossaText.text = $"${SaldoBossa}";
-        }
+        if (saldoBossaText == null)
+            return;
+
+        int saldoGracza = postawionaKwotaGracza > 0
+            ? 0
+            : GameData.PobierzLubUtworz().SaldoGracza;
+
+        int nastepnaStawka = saldoGracza > 0
+            ? ObliczStawkeBossa(saldoGracza)
+            : 0;
+
+        saldoBossaText.text = $"${SaldoBossa}\nNext stake: ${nastepnaStawka}";
+    }
+
+    private int ObliczStawkeBossa(int saldoGracza)
+    {
+        if (SaldoBossa <= 0)
+            return 0;
+
+        float stosunekSalda = (float)SaldoBossa / Mathf.Max(1, saldoGracza);
+        float mnoznikStawki = 1f;
+
+        if (stosunekSalda < 0.4f)
+            mnoznikStawki = 2f;
+        else if (stosunekSalda < 0.8f)
+            mnoznikStawki = 1.5f;
+        else if (stosunekSalda > 2f)
+            mnoznikStawki = 0.5f;
+        else if (stosunekSalda > 1.25f)
+            mnoznikStawki = 0.75f;
+
+        return Mathf.Clamp(
+            Mathf.RoundToInt(stawkaZakladu * mnoznikStawki),
+            1,
+            SaldoBossa
+        );
     }
 
     private IEnumerator KolejnoscTury()
     {
-        while (GameData.PobierzLubUtworz().SaldoGracza > 0 && SaldoBossa > 0)
+        GameData data = GameData.PobierzLubUtworz();
+
+        while (data.SaldoGracza > 0 && SaldoBossa > 0)
         {
             yield return StartCoroutine(CzekajNaPrzycisk());
 
@@ -108,25 +174,23 @@ public class Dices : MonoBehaviour
 
             yield return StartCoroutine(PrzebiegGry());
 
-            if (GameData.PobierzLubUtworz().SaldoGracza <= 1 && postawionaKwotaGracza > 0)
+            if (data.SaldoGracza <= 1 && postawionaKwotaGracza > 0)
             {
-                GameData.PobierzLubUtworz().SaldoGracza = 0;
+                postawionaKwotaGracza = 0;
+                data.SaldoGracza = 0;
             }
+
+            AktualizujSaldoGracza();
+            AktualizujSaldoBossa();
         }
 
-        if (SaldoBossa <= 0)
-        {
-            GameRun.Instance.ResolvePokerBoss(true);
-        }
-        else
-        {
-            GameRun.Instance.ResolvePokerBoss(false);
-        }
+        GameRun.Instance.ResolvePokerBoss(SaldoBossa <= 0);
     }
 
     private void UstawListeProp()
     {
-        if (propDropdown == null) return;
+        if (propDropdown == null)
+            return;
 
         propDropdown.ClearOptions();
         propDropdown.AddOptions(new List<string>
@@ -163,9 +227,11 @@ public class Dices : MonoBehaviour
             case 1:
                 Pass();
                 break;
+
             case 2:
                 DontPass();
                 break;
+
             case 3:
                 Prop();
                 break;
@@ -175,50 +241,53 @@ public class Dices : MonoBehaviour
     private int PobierzBezpiecznaStawke()
     {
         GameData data = GameData.PobierzLubUtworz();
-        int realnaStawka = Mathf.Clamp(stawkaZakladu, 1, data.SaldoGracza);
-        postawionaKwotaGracza = realnaStawka;
+        saldoGraczaPrzedZakladem = data.SaldoGracza;
 
-        if (data.SaldoGracza - realnaStawka <= 0)
+        int realnaStawka = Mathf.Min(stawkaZakladu, saldoGraczaPrzedZakladem);
+        postawionaKwotaGracza = 0;
+
+        if (realnaStawka <= 0)
+            return 0;
+
+        if (realnaStawka == saldoGraczaPrzedZakladem)
         {
+            postawionaKwotaGracza = realnaStawka;
             data.SaldoGracza = 1;
         }
         else
         {
             data.SaldoGracza -= realnaStawka;
-            postawionaKwotaGracza = 0;
         }
 
+        AktualizujSaldoGracza();
         return realnaStawka;
     }
 
     public void Pass()
     {
-        int kwota = PobierzBezpiecznaStawke();
         aktualnyZaklad = new Zaklad
         {
             typ = TypZakladu.Pass,
-            kwota = kwota
+            kwota = PobierzBezpiecznaStawke()
         };
     }
 
     public void DontPass()
     {
-        int kwota = PobierzBezpiecznaStawke();
         aktualnyZaklad = new Zaklad
         {
             typ = TypZakladu.DontPass,
-            kwota = kwota
+            kwota = PobierzBezpiecznaStawke()
         };
     }
 
     public void Prop()
     {
-        int kwota = PobierzBezpiecznaStawke();
         aktualnyZaklad = new Zaklad
         {
             typ = TypZakladu.Prop,
             prop = wybranyProp,
-            kwota = kwota
+            kwota = PobierzBezpiecznaStawke()
         };
     }
 
@@ -227,57 +296,32 @@ public class Dices : MonoBehaviour
         if (SaldoBossa <= 0)
             return;
 
-        int saldoGracza = GameRun.Instance.Money;
-        float stosunekSalda = (float)SaldoBossa / Mathf.Max(1, saldoGracza);
+        float stosunekSalda =
+            (float)SaldoBossa / Mathf.Max(1, saldoGraczaPrzedZakladem);
 
-        int stawkaBossa;
+        int stawkaBossa = ObliczStawkeBossa(saldoGraczaPrzedZakladem);
+        int szansaNaProp = stosunekSalda < 0.4f ? 25 : 10;
+
         TypZakladu wybranyTyp;
         TypProp wybranyPropBossa = TypProp.AnySeven;
 
-        if (stosunekSalda < 0.4f)
-        {
-            stawkaBossa = Mathf.Max(1, Mathf.RoundToInt(SaldoBossa * 0.4f));
-        }
-        else if (stosunekSalda > 1.5f)
-        {
-            stawkaBossa = Mathf.Max(1, Mathf.RoundToInt(SaldoBossa * 0.15f));
-        }
-        else
-        {
-            stawkaBossa = Mathf.RoundToInt(stawkaZakladu * Random.Range(0.8f, 1.3f));
-        }
-
-        stawkaBossa = Mathf.Clamp(stawkaBossa, 1, SaldoBossa);
-
-        int los = Random.Range(0, 100);
-        int szansaNaProp = stosunekSalda < 0.4f ? 25 : 10;
-
-        if (los < szansaNaProp)
+        if (Random.Range(0, 100) < szansaNaProp)
         {
             wybranyTyp = TypZakladu.Prop;
-
-            if (stosunekSalda < 0.4f)
-            {
-                TypProp[] ryzykownePropy = { TypProp.Three, TypProp.Eleven, TypProp.Two, TypProp.Twelve };
-                wybranyPropBossa = ryzykownePropy[Random.Range(0, ryzykownePropy.Length)];
-            }
-            else
-            {
-                wybranyPropBossa = Random.value < 0.65f ? TypProp.AnySeven : TypProp.AnyCraps;
-            }
+            int indeks = Random.Range(0, DostepnePropy.Length);
+            wybranyPropBossa = DostepnePropy[indeks];
+        }
+        else if (aktualnyZaklad.typ != TypZakladu.Prop && Random.value < 0.4f)
+        {
+            wybranyTyp = aktualnyZaklad.typ == TypZakladu.Pass
+                ? TypZakladu.DontPass
+                : TypZakladu.Pass;
         }
         else
         {
-            if (Random.value < 0.4f && aktualnyZaklad.typ != TypZakladu.Prop)
-            {
-                wybranyTyp = aktualnyZaklad.typ == TypZakladu.Pass
-                    ? TypZakladu.DontPass
-                    : TypZakladu.Pass;
-            }
-            else
-            {
-                wybranyTyp = Random.value < 0.5f ? TypZakladu.Pass : TypZakladu.DontPass;
-            }
+            wybranyTyp = Random.value < 0.5f
+                ? TypZakladu.Pass
+                : TypZakladu.DontPass;
         }
 
         SaldoBossa -= stawkaBossa;
@@ -295,8 +339,10 @@ public class Dices : MonoBehaviour
         dice1S = Random.Range(1, 7);
         dice2S = Random.Range(1, 7);
         score = dice1S + dice2S;
+
         Dice1.sprite = walls[dice1S - 1];
         Dice2.sprite = walls[dice2S - 1];
+
         czyKliknietoRoll = true;
     }
 
@@ -317,7 +363,7 @@ public class Dices : MonoBehaviour
         yield return new WaitUntil(() => czyKliknietoRoll);
         historiaWynikow.Add(score);
 
-        TypZakladu wynikGlowny = TypZakladu.Pass;
+        TypZakladu wynikGlowny;
 
         if (score == 7 || score == 11)
         {
@@ -342,7 +388,8 @@ public class Dices : MonoBehaviour
                     wynikGlowny = TypZakladu.Pass;
                     break;
                 }
-                else if (score == 7)
+
+                if (score == 7)
                 {
                     wynikGlowny = TypZakladu.DontPass;
                     break;
@@ -379,16 +426,24 @@ public class Dices : MonoBehaviour
         {
             case TypProp.AnySeven:
                 return historiaWynikow.Contains(7);
+
             case TypProp.AnyCraps:
-                return historiaWynikow.Contains(2) || historiaWynikow.Contains(3) || historiaWynikow.Contains(12);
+                return historiaWynikow.Contains(2) ||
+                       historiaWynikow.Contains(3) ||
+                       historiaWynikow.Contains(12);
+
             case TypProp.Three:
                 return historiaWynikow.Contains(3);
+
             case TypProp.Eleven:
                 return historiaWynikow.Contains(11);
+
             case TypProp.Two:
                 return historiaWynikow.Contains(2);
+
             case TypProp.Twelve:
                 return historiaWynikow.Contains(12);
+
             default:
                 return false;
         }
@@ -397,23 +452,25 @@ public class Dices : MonoBehaviour
     private int ObliczWyplate(Zaklad zaklad)
     {
         if (zaklad.typ == TypZakladu.Pass || zaklad.typ == TypZakladu.DontPass)
-        {
             return zaklad.kwota * 2;
-        }
 
         int mnoznik = 0;
+
         switch (zaklad.prop)
         {
             case TypProp.AnySeven:
                 mnoznik = 4;
                 break;
+
             case TypProp.AnyCraps:
                 mnoznik = 7;
                 break;
+
             case TypProp.Three:
             case TypProp.Eleven:
                 mnoznik = 15;
                 break;
+
             case TypProp.Two:
             case TypProp.Twelve:
                 mnoznik = 30;
@@ -426,23 +483,33 @@ public class Dices : MonoBehaviour
     public void Wynik(TypZakladu wygrywajacyZaklad)
     {
         int wygrana = ObliczWyplate(aktualnyZaklad);
+        GameData data = GameData.PobierzLubUtworz();
+
         if (postawionaKwotaGracza > 0)
         {
-            GameData.PobierzLubUtworz().SaldoGracza = wygrana;
             postawionaKwotaGracza = 0;
+            data.SaldoGracza = wygrana;
         }
         else
         {
-            GameData.PobierzLubUtworz().SaldoGracza += wygrana;
+            data.SaldoGracza += wygrana;
         }
+
+        SaldoBossa = Mathf.Max(0, SaldoBossa - wygrana);
+
+        AktualizujSaldoGracza();
+        AktualizujSaldoBossa();
     }
 
     public void WynikBoss(TypZakladu wygrywajacyZaklad)
     {
         int wygrana = ObliczWyplate(aktualnyZakladBossa);
         SaldoBossa += wygrana;
-        AktualizujSaldoBossa();
-        GameData data =GameData.PobierzLubUtworz();
+
+        GameData data = GameData.PobierzLubUtworz();
         data.SaldoGracza = Mathf.Max(0, data.SaldoGracza - wygrana);
+
+        AktualizujSaldoBossa();
+        AktualizujSaldoGracza();
     }
 }

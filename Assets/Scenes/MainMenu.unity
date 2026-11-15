@@ -741,9 +741,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a8872a677ab96d4894e659bd4e68840, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameRunUI
-  casinoScene: save
-  statusText: {fileID: 0}
   timerText: {fileID: 0}
+  dayCashText: {fileID: 0}
 --- !u!1 &1017742384
 GameObject:
   m_ObjectHideFlags: 0
@@ -1073,7 +1072,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a18f01af0126f9841a9ac3a07b4373dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameRun
-  sessionDuration: 10
+  sessionDuration: 5
   startingQuota: 20
   bossReward: 50
   pokerBossScene: BossBattle
