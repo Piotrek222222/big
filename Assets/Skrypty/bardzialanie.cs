@@ -8,7 +8,8 @@ public class BarShop : MonoBehaviour
     {
         Lucky,
         Money,
-        Death
+        Death,
+        SmallLuck
     }
 
     [System.Serializable]
@@ -85,6 +86,11 @@ public class BarShop : MonoBehaviour
                     run.DoublePermanentLuck();
                     ShowMessage("You survived! Your luck multiplier doubled.");
                 }
+                break;
+
+            case PotionType.SmallLuck:
+                GameData.PobierzLubUtworz().Luck += 10f;
+                ShowMessage("Small Luck potion: +10 base Luck.");
                 break;
         }
     }

@@ -48,6 +48,15 @@ TagManager:
   - name: bartender
     uniqueID: 1748194601
     locked: 0
+  - name: casinofloor
+    uniqueID: 2822017007
+    locked: 0
+  - name: sciany
+    uniqueID: 2992906879
+    locked: 0
+  - name: wszystko
+    uniqueID: 369835133
+    locked: 0
   m_RenderingLayers:
   - Default
   m_MigratedRenderPipelines: []
