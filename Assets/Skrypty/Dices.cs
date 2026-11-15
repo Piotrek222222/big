@@ -110,9 +110,11 @@ public class Dices : MonoBehaviour
         {
             case 1:
                 Pass();
+                Debug.Log("nigga1");
                 break;
             case 2:
                 DontPass();
+                Debug.Log("nigga2");
                 break;
             case 3:
                 Prop();
@@ -153,7 +155,11 @@ public class Dices : MonoBehaviour
 
     public void BossTurn()
     {
-
+        aktualnyZakladBossa = new Zaklad
+        {
+            typ = TypZakladu.Pass,
+            kwota = stawkaZakladu
+        };
     }
 
     public void Roll()
