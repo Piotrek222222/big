@@ -262,7 +262,7 @@ public class GameRun : MonoBehaviour
     public void ResolvePokerBoss(bool won)
     {
         if (!AwaitingPokerBoss || IsFinished ||
-            SceneManager.GetActiveScene().name != pokerBossScene)
+            SceneManager.GetActiveScene().name != "Dices")
         {
             return;
         }
@@ -283,7 +283,6 @@ public class GameRun : MonoBehaviour
             EndRun($"YOU WIN! Final boss defeated. Reward: ${bossReward}.");
             return;
         }
-
         Message = $"Boss defeated! Reward: ${bossReward}.";
         StartNextDay();
     }

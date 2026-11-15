@@ -442,5 +442,7 @@ public class Dices : MonoBehaviour
         int wygrana = ObliczWyplate(aktualnyZakladBossa);
         SaldoBossa += wygrana;
         AktualizujSaldoBossa();
+        GameData data =GameData.PobierzLubUtworz();
+        data.SaldoGracza = Mathf.Max(0, data.SaldoGracza - wygrana);
     }
 }
