@@ -50,6 +50,7 @@ public class Dices : MonoBehaviour
     public int stawkaZakladu = 10;
     public TypProp wybranyProp = TypProp.AnySeven;
     public TMP_Dropdown propDropdown;
+    public TMP_Text saldoBossaText;
     public Zaklad aktualnyZaklad;
     public Zaklad aktualnyZakladBossa;
 
@@ -62,14 +63,60 @@ public class Dices : MonoBehaviour
     public int point;
     public List<int> historiaWynikow = new List<int>();
     private bool czyKliknietoRoll = false;
+    private int postawionaKwotaGracza = 0;
 
     public void GameStart()
     {
-        SaldoBossa = GameRun.Instance.Money;
+        float mnoznikBossa = 1f;
+
+        if (GameRun.Instance.Day == 6)
+        {
+            mnoznikBossa = 1.5f;
+        }
+        else if (GameRun.Instance.Day == 9)
+        {
+            mnoznikBossa = 2f;
+        }
+
+        SaldoBossa = Mathf.RoundToInt(GameRun.Instance.Money * mnoznikBossa);
+        AktualizujSaldoBossa();
         UstawListeProp();
-        StartCoroutine(CzekajNaPrzycisk());
-        BossTurn();
-        Game();
+        StartCoroutine(KolejnoscTury());
+    }
+
+    private void AktualizujSaldoBossa()
+    {
+        if (saldoBossaText != null)
+        {
+            saldoBossaText.text = $"${SaldoBossa}";
+        }
+    }
+
+    private IEnumerator KolejnoscTury()
+    {
+        while (GameData.PobierzLubUtworz().SaldoGracza > 0 && SaldoBossa > 0)
+        {
+            yield return StartCoroutine(CzekajNaPrzycisk());
+
+            BossTurn();
+            AktualizujSaldoBossa();
+
+            yield return StartCoroutine(PrzebiegGry());
+
+            if (GameData.PobierzLubUtworz().SaldoGracza <= 1 && postawionaKwotaGracza > 0)
+            {
+                GameData.PobierzLubUtworz().SaldoGracza = 0;
+            }
+        }
+
+        if (SaldoBossa <= 0)
+        {
+            GameRun.Instance.ResolvePokerBoss(true);
+        }
+        else
+        {
+            GameRun.Instance.ResolvePokerBoss(false);
+        }
     }
 
     private void UstawListeProp()
@@ -120,40 +167,122 @@ public class Dices : MonoBehaviour
         }
     }
 
+    private int PobierzBezpiecznaStawke()
+    {
+        GameData data = GameData.PobierzLubUtworz();
+        int realnaStawka = Mathf.Clamp(stawkaZakladu, 1, data.SaldoGracza);
+        postawionaKwotaGracza = realnaStawka;
+
+        if (data.SaldoGracza - realnaStawka <= 0)
+        {
+            data.SaldoGracza = 1;
+        }
+        else
+        {
+            data.SaldoGracza -= realnaStawka;
+            postawionaKwotaGracza = 0;
+        }
+
+        return realnaStawka;
+    }
+
     public void Pass()
     {
-        GameRun.Instance.TrySpend(stawkaZakladu);
+        int kwota = PobierzBezpiecznaStawke();
         aktualnyZaklad = new Zaklad
         {
             typ = TypZakladu.Pass,
-            kwota = stawkaZakladu
+            kwota = kwota
         };
     }
 
     public void DontPass()
     {
-        GameRun.Instance.TrySpend(stawkaZakladu);
+        int kwota = PobierzBezpiecznaStawke();
         aktualnyZaklad = new Zaklad
         {
             typ = TypZakladu.DontPass,
-            kwota = stawkaZakladu
+            kwota = kwota
         };
     }
 
     public void Prop()
     {
-        GameRun.Instance.TrySpend(stawkaZakladu);
+        int kwota = PobierzBezpiecznaStawke();
         aktualnyZaklad = new Zaklad
         {
             typ = TypZakladu.Prop,
             prop = wybranyProp,
-            kwota = stawkaZakladu
+            kwota = kwota
         };
     }
 
     public void BossTurn()
     {
+        if (SaldoBossa <= 0)
+            return;
 
+        int saldoGracza = GameRun.Instance.Money;
+        float stosunekSalda = (float)SaldoBossa / Mathf.Max(1, saldoGracza);
+
+        int stawkaBossa;
+        TypZakladu wybranyTyp;
+        TypProp wybranyPropBossa = TypProp.AnySeven;
+
+        if (stosunekSalda < 0.4f)
+        {
+            stawkaBossa = Mathf.Max(1, Mathf.RoundToInt(SaldoBossa * 0.4f));
+        }
+        else if (stosunekSalda > 1.5f)
+        {
+            stawkaBossa = Mathf.Max(1, Mathf.RoundToInt(SaldoBossa * 0.15f));
+        }
+        else
+        {
+            stawkaBossa = Mathf.RoundToInt(stawkaZakladu * Random.Range(0.8f, 1.3f));
+        }
+
+        stawkaBossa = Mathf.Clamp(stawkaBossa, 1, SaldoBossa);
+
+        int los = Random.Range(0, 100);
+        int szansaNaProp = stosunekSalda < 0.4f ? 25 : 10;
+
+        if (los < szansaNaProp)
+        {
+            wybranyTyp = TypZakladu.Prop;
+
+            if (stosunekSalda < 0.4f)
+            {
+                TypProp[] ryzykownePropy = { TypProp.Three, TypProp.Eleven, TypProp.Two, TypProp.Twelve };
+                wybranyPropBossa = ryzykownePropy[Random.Range(0, ryzykownePropy.Length)];
+            }
+            else
+            {
+                wybranyPropBossa = Random.value < 0.65f ? TypProp.AnySeven : TypProp.AnyCraps;
+            }
+        }
+        else
+        {
+            if (Random.value < 0.4f && aktualnyZaklad.typ != TypZakladu.Prop)
+            {
+                wybranyTyp = aktualnyZaklad.typ == TypZakladu.Pass
+                    ? TypZakladu.DontPass
+                    : TypZakladu.Pass;
+            }
+            else
+            {
+                wybranyTyp = Random.value < 0.5f ? TypZakladu.Pass : TypZakladu.DontPass;
+            }
+        }
+
+        SaldoBossa -= stawkaBossa;
+
+        aktualnyZakladBossa = new Zaklad
+        {
+            typ = wybranyTyp,
+            prop = wybranyPropBossa,
+            kwota = stawkaBossa
+        };
     }
 
     public void Roll()
@@ -292,12 +421,21 @@ public class Dices : MonoBehaviour
     public void Wynik(TypZakladu wygrywajacyZaklad)
     {
         int wygrana = ObliczWyplate(aktualnyZaklad);
-        GameData.PobierzLubUtworz().SaldoGracza += wygrana;
+        if (postawionaKwotaGracza > 0)
+        {
+            GameData.PobierzLubUtworz().SaldoGracza = wygrana;
+            postawionaKwotaGracza = 0;
+        }
+        else
+        {
+            GameData.PobierzLubUtworz().SaldoGracza += wygrana;
+        }
     }
 
     public void WynikBoss(TypZakladu wygrywajacyZaklad)
     {
         int wygrana = ObliczWyplate(aktualnyZakladBossa);
         SaldoBossa += wygrana;
+        AktualizujSaldoBossa();
     }
 }
