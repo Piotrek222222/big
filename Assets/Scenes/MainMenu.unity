@@ -872,7 +872,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3691442693599655673, guid: ab2804fa89ed7ef4186828fe2e247a07, type: 3}
       propertyPath: SFX.Array.size
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 3691442693599655673, guid: ab2804fa89ed7ef4186828fe2e247a07, type: 3}
       propertyPath: Music.Array.size
@@ -894,6 +894,10 @@ PrefabInstance:
       propertyPath: 'SFX.Array.data[3]'
       value: 
       objectReference: {fileID: 8300000, guid: 9a3b55d802f4fa442881b420bed319df, type: 3}
+    - target: {fileID: 3691442693599655673, guid: ab2804fa89ed7ef4186828fe2e247a07, type: 3}
+      propertyPath: 'SFX.Array.data[4]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 8cf05ee5738f3ed408497f729a5cfd9c, type: 3}
     - target: {fileID: 3691442693599655673, guid: ab2804fa89ed7ef4186828fe2e247a07, type: 3}
       propertyPath: 'Music.Array.data[0]'
       value: 

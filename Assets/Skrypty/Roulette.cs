@@ -76,6 +76,8 @@ public class RuletkaManager : MonoBehaviour
             squares[i].onClick.AddListener(() => Bet(indeks));
         }
 
+        // Upewniamy się, że na starcie wszystkie przyciski mają alpha = 0
+        ResetujPrzezroczystoscWszystkichPol();
         OdswiezSaldoUI();
     }
 
@@ -84,6 +86,30 @@ public class RuletkaManager : MonoBehaviour
         if (SaldoText != null)
         {
             SaldoText.text = SaldoGracza.ToString();
+        }
+    }
+
+    // NOWE: Zmienia kanał Alpha komponentu Image dla konkretnego przycisku (0f = 0%, 1f = 100%)
+    private void UstawPrzezroczystoscPola(int indeksPola, float alpha)
+    {
+        if (indeksPola < 0 || indeksPola >= squares.Count || squares[indeksPola] == null)
+            return;
+
+        Image img = squares[indeksPola].GetComponent<Image>();
+        if (img != null)
+        {
+            Color kolor = img.color;
+            kolor.a = alpha;
+            img.color = kolor;
+        }
+    }
+
+    // NOWE: Ustawia alpha = 0 dla wszystkich przycisków na planszy
+    private void ResetujPrzezroczystoscWszystkichPol()
+    {
+        for (int i = 0; i < squares.Count; i++)
+        {
+            UstawPrzezroczystoscPola(i, 0f);
         }
     }
 
@@ -103,6 +129,9 @@ public class RuletkaManager : MonoBehaviour
             return;
 
         SaldoGracza -= aktualnaStawka;
+
+        // NOWE: Ustawia przezroczystość klikniętego przycisku na 100% (1f)
+        UstawPrzezroczystoscPola(indeksPola, 1f);
 
         for (int i = 0; i < aktywneZaklady.Count; i++)
         {
@@ -131,6 +160,9 @@ public class RuletkaManager : MonoBehaviour
         }
         aktywneZaklady.Clear();
         SaldoGracza += zwrot;
+
+        // NOWE: Ustawia przezroczystość wszystkich pól z powrotem na 0% (0f)
+        ResetujPrzezroczystoscWszystkichPol();
     }
 
     public void Losuj()
@@ -144,7 +176,6 @@ public class RuletkaManager : MonoBehaviour
 
     public WynikRuletki LosujIZapisz()
     {
-        // ZMIENIONE: Losuje wyłącznie numery od 0 do 33 (34 jest wyłączne)
         int wylosowana = Random.Range(0, 34);
         WynikRuletki wynik = AnalizujNumer(wylosowana);
 
@@ -152,7 +183,6 @@ public class RuletkaManager : MonoBehaviour
         {
             if (Random.Range(0f, 100f) < Luck)
             {
-                // ZMIENIONE: Ponowne losowanie (Luck) również w zakresie 0–33
                 wylosowana = Random.Range(0, 34);
                 wynik = AnalizujNumer(wylosowana);
             }
@@ -192,6 +222,9 @@ public class RuletkaManager : MonoBehaviour
         ostatniaWygrana = sumaWygranej;
         aktywneZaklady.Clear();
         SaldoGracza += sumaWygranej;
+
+        // NOWE: Po rozliczeniu zakłady znikają ze stołu, więc zerujemy też podświetlenie
+        ResetujPrzezroczystoscWszystkichPol();
     }
 
     private int ObliczSumeWygranych(WynikRuletki wynik)
@@ -209,7 +242,6 @@ public class RuletkaManager : MonoBehaviour
         int idx = zaklad.indeksPola;
         int stawka = zaklad.kwota;
 
-        // Indeksy 34-36 zostają w liście jako puste (w pętli Start() są pomijane przez squares[i] == null)
         if (idx >= 0 && idx <= 36)
             return (wynik.wartoscLiczbowa == idx) ? stawka * 36 : 0;
 

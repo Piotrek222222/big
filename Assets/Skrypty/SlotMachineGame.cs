@@ -16,6 +16,7 @@ public class SlotMachineGame : MonoBehaviour
     [SerializeField] private Image symbol3;
     [SerializeField] private Sprite[] symbols;
     [SerializeField] private TMP_Text resultText;
+    [SerializeField] private int winSoundIndex = 0; // Numer dźwięku wygranej na liście SFX w AudioManager
 
     private const int SpinCost = 10;
     private const int WinPayout = 300;
@@ -76,12 +77,12 @@ public class SlotMachineGame : MonoBehaviour
         Sprite third = symbols[Random.Range(0, symbols.Length)];
 
         bool win = first == second && second == third;
-        int payout = win ? run.CreditWin(WinPayout) : 0;
 
-        StartCoroutine(RevealSymbols(first, second, third, payout));
+        // Przekazujemy samo 'win' – pieniądze dopiszemy dopiero po odsłonięciu bębnów
+        StartCoroutine(RevealSymbols(first, second, third, win));
     }
 
-    private IEnumerator RevealSymbols(Sprite first, Sprite second, Sprite third, int payout)
+    private IEnumerator RevealSymbols(Sprite first, Sprite second, Sprite third, bool win)
     {
         spinning = true;
 
@@ -103,7 +104,22 @@ public class SlotMachineGame : MonoBehaviour
         yield return delay;
         Reveal(symbol3, third);
 
-        ShowResult(payout > 0 ? $"BIG WIN! +${payout}" : "YOU LOSE!");
+        // Dopiero tutaj (po 3 sekundach) dopisujemy wygraną i odpalamy dźwięk
+        if (win)
+        {
+            int payout = GameRun.Instance != null ? GameRun.Instance.CreditWin(WinPayout) : WinPayout;
+
+            if (AudioManager.instance != null)
+            {
+                AudioManager.instance.PlaySFX(4);
+            }
+
+            ShowResult($"BIG WIN! +${payout}");
+        }
+        else
+        {
+            ShowResult("YOU LOSE!");
+        }
 
         leverDown.SetActive(false);
         leverUp.SetActive(true);
