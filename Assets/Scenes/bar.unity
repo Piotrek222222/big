@@ -1397,13 +1397,13 @@ MonoBehaviour:
   bottles:
   - button: {fileID: 1427864333}
     type: 2
-    price: 50
+    price: 25
   - button: {fileID: 1060127212}
     type: 2
-    price: 50
+    price: 25
   - button: {fileID: 1637743169}
     type: 0
-    price: 30
+    price: 20
   - button: {fileID: 0}
     type: 0
     price: 0
@@ -1412,19 +1412,19 @@ MonoBehaviour:
     price: 30
   - button: {fileID: 1541809407}
     type: 1
-    price: 40
+    price: 20
   - button: {fileID: 1280459830}
     type: 1
-    price: 40
+    price: 30
   - button: {fileID: 1974299384}
     type: 3
-    price: 20
+    price: 10
   - button: {fileID: 1648739813}
     type: 3
-    price: 60
+    price: 30
   - button: {fileID: 1331605198}
     type: 3
-    price: 80
+    price: 50
   messageText: {fileID: 2039599143}
 --- !u!114 &1241678876
 MonoBehaviour:

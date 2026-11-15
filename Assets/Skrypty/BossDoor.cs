@@ -10,27 +10,49 @@ public class BossDoor : MonoBehaviour
     [SerializeField] private GameObject bossLabel;
     [SerializeField, Min(0.1f)] private float interactionRange = 1.2f;
 
+    private void OnEnable()
+    {
+        UpdateBossLabel();
+    }
+
     private void Update()
     {
         GameRun run = GameRun.Instance;
-        bool available = run != null && run.AwaitingPokerBoss && !run.IsFinished;
+        bool doorUnlocked = IsDoorUnlocked(run);
 
-        if (bossLabel != null && bossLabel.activeSelf != available)
-            bossLabel.SetActive(available);
+        SetBossLabelVisible(doorUnlocked);
 
-        if (!available || player == null)
+        if (!doorUnlocked || player == null)
             return;
 
         Vector2 offset = (Vector2)(player.position - transform.position);
+        bool playerInRange =
+            offset.sqrMagnitude <= interactionRange * interactionRange;
 
-        if (offset.sqrMagnitude <= interactionRange * interactionRange && PressedE())
+        if (playerInRange && PressedE())
             run.EnterBossFight();
+    }
+
+    private void UpdateBossLabel()
+    {
+        SetBossLabelVisible(IsDoorUnlocked(GameRun.Instance));
+    }
+
+    private static bool IsDoorUnlocked(GameRun run)
+    {
+        return run != null && run.AwaitingPokerBoss && !run.IsFinished;
+    }
+
+    private void SetBossLabelVisible(bool visible)
+    {
+        if (bossLabel != null && bossLabel.activeSelf != visible)
+            bossLabel.SetActive(visible);
     }
 
     private static bool PressedE()
     {
 #if ENABLE_INPUT_SYSTEM
-        var keyboard = Keyboard.current;
+        Keyboard keyboard = Keyboard.current;
         return keyboard != null && keyboard.eKey.wasPressedThisFrame;
 #else
         return Input.GetKeyDown(KeyCode.E);

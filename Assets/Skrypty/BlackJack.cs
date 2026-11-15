@@ -23,8 +23,10 @@ public class BlackJack : MonoBehaviour
     public bool isHit;
     public Slider Bet_Size;
     public Text BetScore;
-    public Text SaldoText; // Opcjonalnie: podepnij tekst salda z Canvasa
-    public Text ResultText; // Opcjonalnie: podepnij tekst wyniku (Wygrana / Przegrana / Remis)
+    public Text SaldoText;
+    public Text ResultText;
+
+    private bool luckRerollUsed;
 
     private int SaldoGracza
     {
@@ -36,9 +38,7 @@ public class BlackJack : MonoBehaviour
         }
     }
 
-    private float Luck => GameData.PobierzLubUtworz().Luck;
-
-    void Awake()
+    private void Awake()
     {
         Cards = GetComponent<Cards>();
         PlayerCard1.gameObject.SetActive(false);
@@ -57,87 +57,82 @@ public class BlackJack : MonoBehaviour
     private void OdswiezSaldoUI()
     {
         if (SaldoText != null)
-        {
             SaldoText.text = SaldoGracza.ToString();
-        }
     }
 
     private void UstawWynikUI(string komunikat)
     {
         if (ResultText != null)
-        {
             ResultText.text = komunikat;
-        }
     }
 
     public void Bet()
     {
-        if (isGameActive) return;
+        if (isGameActive)
+            return;
 
-        // Zawsze pobierz aktualną wartość ze suwaka przed zakładem
         if (Bet_Size != null)
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
 
-        // Sprawdzenie, czy stawka jest poprawna i czy gracza stać
         if (aktualnaStawka <= 0 || SaldoGracza < aktualnaStawka)
-        {
             return;
-        }
 
-        // Odtworzenie dźwięku o indeksie 2 z listy SFX w AudioManager
-        
-
-        // Pobranie stawki z globalnego salda (od razu zapisuje się w GameData)
         SaldoGracza -= aktualnaStawka;
         UstawWynikUI("");
 
         PlayerCard1.gameObject.SetActive(true);
         DealerCard1.gameObject.SetActive(true);
+
         isHit = false;
+        luckRerollUsed = false;
         usedCardIndices.Clear();
         playerScore = 0;
         dealerScore = 0;
-        if (Player_Score != null) Player_Score.text = playerScore.ToString();
-        if (Dealer_Score != null) Dealer_Score.text = dealerScore.ToString();
         playerAces = 0;
         dealerAces = 0;
+
+        if (Player_Score != null)
+            Player_Score.text = playerScore.ToString();
+
+        if (Dealer_Score != null)
+            Dealer_Score.text = dealerScore.ToString();
+
         isGameActive = true;
         ClearTable();
 
         DrawCardForPlayer();
         DrawCardForDealer();
         DrawCardForPlayer();
-        if (Cards != null && Cards.cards.Count > 52) ShowDealerCard(52);
+
+        if (Cards != null && Cards.cards.Count > 52)
+            ShowDealerCard(52);
 
         if (playerScore == 21)
-        {
             Stand();
-        }
     }
 
     public void Zmiana(float wartosc)
     {
-        // Nie pozwalamy zmieniać stawki w trakcie aktywnego rozdania
-        if (isGameActive) return;
+        if (isGameActive)
+            return;
 
         aktualnaStawka = Mathf.RoundToInt(wartosc);
 
         if (BetScore != null)
-        {
             BetScore.text = aktualnaStawka.ToString();
-        }
     }
 
     public void Hit()
     {
-        if (!isGameActive) return;
-        isHit = true;
+        if (!isGameActive)
+            return;
 
-        DrawCardForPlayer();
+        isHit = true;
+        DrawCardForPlayer(allowLuck: true);
 
         if (playerScore > 21)
         {
-            UstawWynikUI($"Fura! Przegrałeś ${aktualnaStawka}");
+            UstawWynikUI($"Fura! Przegrales ${aktualnaStawka}");
             EndGame();
         }
         else if (playerScore == 21)
@@ -148,25 +143,26 @@ public class BlackJack : MonoBehaviour
 
     public void Double()
     {
-        if (!isGameActive) return;
-        if (isHit) return;
+        if (!isGameActive || isHit)
+            return;
 
-        // Sprawdzenie, czy gracza stać na podwojenie stawki
         if (SaldoGracza < aktualnaStawka)
         {
-            UstawWynikUI("Za mało środków na Double!");
+            UstawWynikUI("Za malo srodkow na Double!");
             return;
         }
 
         SaldoGracza -= aktualnaStawka;
         aktualnaStawka *= 2;
-        if (BetScore != null) BetScore.text = aktualnaStawka.ToString();
+
+        if (BetScore != null)
+            BetScore.text = aktualnaStawka.ToString();
 
         DrawCardForPlayer();
 
         if (playerScore > 21)
         {
-            UstawWynikUI($"Fura! Przegrałeś ${aktualnaStawka}");
+            UstawWynikUI($"Fura! Przegrales ${aktualnaStawka}");
             EndGame();
         }
         else
@@ -177,14 +173,18 @@ public class BlackJack : MonoBehaviour
 
     public void Stand()
     {
-        if (!isGameActive) return;
+        if (!isGameActive)
+            return;
 
         DealerTurn();
     }
 
     public void DealerTurn()
     {
-        if (spawnedDealerCards.Count > 1 && Cards != null && Cards.cards.Count > 52 && spawnedDealerCards[1].sprite == Cards.cards[52])
+        if (spawnedDealerCards.Count > 1 &&
+            Cards != null &&
+            Cards.cards.Count > 52 &&
+            spawnedDealerCards[1].sprite == Cards.cards[52])
         {
             Destroy(spawnedDealerCards[1].gameObject);
             spawnedDealerCards.RemoveAt(1);
@@ -200,27 +200,41 @@ public class BlackJack : MonoBehaviour
 
     public void DrawCardForPlayer()
     {
-        if (AudioManager.instance != null)
-        {
-            AudioManager.instance.PlaySFX(2);
-        }
-        int cardIndex = DrawUniqueCardIndex();
-        if (cardIndex == -1) return;
+        DrawCardForPlayer(allowLuck: false);
+    }
 
-        if (WillPlayerBust(cardIndex) && Random.Range(0f, 100f) < Luck)
+    private void DrawCardForPlayer(bool allowLuck)
+    {
+        if (AudioManager.instance != null)
+            AudioManager.instance.PlaySFX(2);
+
+        int cardIndex = DrawUniqueCardIndex();
+        if (cardIndex == -1)
+            return;
+
+        GameRun run = GameRun.Instance;
+
+        if (allowLuck &&
+            !luckRerollUsed &&
+            run != null &&
+            WillPlayerBust(cardIndex) &&
+            run.TryBlackjackReroll())
         {
-            int safeCardIndex = DrawSafeCardIndexForPlayer();
-            if (safeCardIndex != -1)
+            int replacementIndex = DrawUniqueCardIndex();
+
+            if (replacementIndex != -1)
             {
+                // Odrzucona karta wraca do talii po dobraniu zastępczej.
                 usedCardIndices.Remove(cardIndex);
-                cardIndex = safeCardIndex;
+                cardIndex = replacementIndex;
+                luckRerollUsed = true;
             }
         }
 
         ShowPlayerCard(cardIndex);
         lastDrawnCardName = GetCardName(cardIndex);
-        int value = GetCardValue(cardIndex, ref playerAces);
-        playerScore += value;
+
+        playerScore += GetCardValue(cardIndex, ref playerAces);
 
         while (playerScore > 21 && playerAces > 0)
         {
@@ -228,58 +242,37 @@ public class BlackJack : MonoBehaviour
             playerAces--;
         }
 
-        if (Player_Score != null) Player_Score.text = playerScore.ToString();
+        if (Player_Score != null)
+            Player_Score.text = playerScore.ToString();
     }
 
     private bool WillPlayerBust(int cardIndex)
     {
-        int tempAces = playerAces;
-        int value = GetCardValue(cardIndex, ref tempAces);
-        int predictedScore = playerScore + value;
+        int predictedAces = playerAces;
+        int predictedScore = playerScore + GetCardValue(cardIndex, ref predictedAces);
 
-        while (predictedScore > 21 && tempAces > 0)
+        while (predictedScore > 21 && predictedAces > 0)
         {
             predictedScore -= 10;
-            tempAces--;
+            predictedAces--;
         }
 
         return predictedScore > 21;
     }
 
-    private int DrawSafeCardIndexForPlayer()
-    {
-        if (Cards == null || Cards.cards.Count == 0) return -1;
-        int playableDeckSize = Mathf.Min(52, Cards.cards.Count);
-
-        List<int> safeCandidates = new List<int>();
-        for (int i = 0; i < playableDeckSize; i++)
-        {
-            if (!usedCardIndices.Contains(i) && !WillPlayerBust(i))
-            {
-                safeCandidates.Add(i);
-            }
-        }
-
-        if (safeCandidates.Count == 0) return -1;
-
-        int chosenIndex = safeCandidates[Random.Range(0, safeCandidates.Count)];
-        usedCardIndices.Add(chosenIndex);
-        return chosenIndex;
-    }
-
     public void DrawCardForDealer()
     {
         if (AudioManager.instance != null)
-        {
             AudioManager.instance.PlaySFX(2);
-        }
+
         int cardIndex = DrawUniqueCardIndex();
-        if (cardIndex == -1) return;
+        if (cardIndex == -1)
+            return;
 
         ShowDealerCard(cardIndex);
         lastDrawnCardName = GetCardName(cardIndex);
-        int value = GetCardValue(cardIndex, ref dealerAces);
-        dealerScore += value;
+
+        dealerScore += GetCardValue(cardIndex, ref dealerAces);
 
         while (dealerScore > 21 && dealerAces > 0)
         {
@@ -287,14 +280,19 @@ public class BlackJack : MonoBehaviour
             dealerAces--;
         }
 
-        if (Dealer_Score != null) Dealer_Score.text = dealerScore.ToString();
+        if (Dealer_Score != null)
+            Dealer_Score.text = dealerScore.ToString();
     }
 
     public int DrawUniqueCardIndex()
     {
-        if (Cards == null || Cards.cards.Count == 0) return -1;
+        if (Cards == null || Cards.cards.Count == 0)
+            return -1;
+
         int playableDeckSize = Mathf.Min(52, Cards.cards.Count);
-        if (usedCardIndices.Count >= playableDeckSize) return -1;
+
+        if (usedCardIndices.Count >= playableDeckSize)
+            return -1;
 
         int randomIndex;
         do
@@ -317,7 +315,8 @@ public class BlackJack : MonoBehaviour
             return 11;
         }
 
-        if (rank <= 9) return rank + 1;
+        if (rank <= 9)
+            return rank + 1;
 
         return 10;
     }
@@ -325,12 +324,17 @@ public class BlackJack : MonoBehaviour
     public string GetCardName(int index)
     {
         string[] suits = { "Clubs", "Spades", "Hearts", "Diamonds" };
-        string[] ranks = { "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King" };
+        string[] ranks =
+        {
+            "Ace", "2", "3", "4", "5", "6", "7",
+            "8", "9", "10", "Jack", "Queen", "King"
+        };
 
         int suitIndex = index / 13;
         int rankIndex = index % 13;
 
-        if (suitIndex < 0 || suitIndex >= suits.Length) return "Unknown";
+        if (suitIndex < 0 || suitIndex >= suits.Length)
+            return "Unknown";
 
         return ranks[rankIndex] + " of " + suits[suitIndex];
     }
@@ -348,7 +352,11 @@ public class BlackJack : MonoBehaviour
             targetCard = Instantiate(PlayerCard1, PlayerCard1.transform.parent);
             RectTransform baseRect = PlayerCard1.GetComponent<RectTransform>();
             RectTransform newRect = targetCard.GetComponent<RectTransform>();
-            newRect.anchoredPosition = new Vector2(baseRect.anchoredPosition.x + (spawnedPlayerCards.Count * cardOffsetX), baseRect.anchoredPosition.y);
+
+            newRect.anchoredPosition = new Vector2(
+                baseRect.anchoredPosition.x + spawnedPlayerCards.Count * cardOffsetX,
+                baseRect.anchoredPosition.y
+            );
         }
 
         targetCard.sprite = Cards.cards[cardIndex];
@@ -369,7 +377,11 @@ public class BlackJack : MonoBehaviour
             targetCard = Instantiate(DealerCard1, DealerCard1.transform.parent);
             RectTransform baseRect = DealerCard1.GetComponent<RectTransform>();
             RectTransform newRect = targetCard.GetComponent<RectTransform>();
-            newRect.anchoredPosition = new Vector2(baseRect.anchoredPosition.x + (spawnedDealerCards.Count * cardOffsetX), baseRect.anchoredPosition.y);
+
+            newRect.anchoredPosition = new Vector2(
+                baseRect.anchoredPosition.x + spawnedDealerCards.Count * cardOffsetX,
+                baseRect.anchoredPosition.y
+            );
         }
 
         targetCard.sprite = Cards.cards[cardIndex];
@@ -381,15 +393,19 @@ public class BlackJack : MonoBehaviour
     {
         for (int i = 1; i < spawnedPlayerCards.Count; i++)
         {
-            if (spawnedPlayerCards[i] != null) Destroy(spawnedPlayerCards[i].gameObject);
+            if (spawnedPlayerCards[i] != null)
+                Destroy(spawnedPlayerCards[i].gameObject);
         }
+
         spawnedPlayerCards.Clear();
         PlayerCard1.gameObject.SetActive(false);
 
         for (int i = 1; i < spawnedDealerCards.Count; i++)
         {
-            if (spawnedDealerCards[i] != null) Destroy(spawnedDealerCards[i].gameObject);
+            if (spawnedDealerCards[i] != null)
+                Destroy(spawnedDealerCards[i].gameObject);
         }
+
         spawnedDealerCards.Clear();
         DealerCard1.gameObject.SetActive(false);
     }
@@ -400,21 +416,20 @@ public class BlackJack : MonoBehaviour
         {
             int wygrana = aktualnaStawka * 2;
             SaldoGracza += wygrana;
-            UstawWynikUI($"Krupier ma furę! Wygrywasz ${wygrana}");
+            UstawWynikUI($"Krupier ma fure! Wygrywasz ${wygrana}");
         }
         else if (playerScore > dealerScore)
         {
             int wygrana = aktualnaStawka * 2;
             SaldoGracza += wygrana;
-            UstawWynikUI($"Wygrałeś ${wygrana}!");
+            UstawWynikUI($"Wygrales ${wygrana}!");
         }
         else if (playerScore < dealerScore)
         {
-            UstawWynikUI($"Przegrałeś ${aktualnaStawka}!");
+            UstawWynikUI($"Przegrales ${aktualnaStawka}!");
         }
         else
         {
-            // Remis - zwrot postawionej stawki
             SaldoGracza += aktualnaStawka;
             UstawWynikUI("Remis! Zwrot stawki.");
         }
@@ -426,11 +441,12 @@ public class BlackJack : MonoBehaviour
     {
         isGameActive = false;
 
-        // Przywrócenie wyświetlania wartości ze suwaka po ewentualnym Double()
         if (Bet_Size != null)
         {
             aktualnaStawka = Mathf.RoundToInt(Bet_Size.value);
-            if (BetScore != null) BetScore.text = aktualnaStawka.ToString();
+
+            if (BetScore != null)
+                BetScore.text = aktualnaStawka.ToString();
         }
     }
 }

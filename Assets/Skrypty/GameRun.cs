@@ -13,7 +13,8 @@ public class GameRun : MonoBehaviour
     [SerializeField] private string pokerBossScene = "BossBattle";
     [SerializeField] private string newDayScene = "NowyDzien";
 
-    private const int DailyMoney = 60;
+    private const int DailyMoney = 50;
+    private const float StartingLuck = 10f;
     private const int BossInterval = 3;
     private const int FinalDay = 9;
     private const double PotionDuration = 30d;
@@ -30,6 +31,7 @@ public class GameRun : MonoBehaviour
     private double luckyEndsAt;
     private double moneyEndsAt;
     private float permanentLuckMultiplier = 1f;
+    private bool slotGuaranteeUsed;
 
     public int Day { get; private set; }
     public bool IsFinished { get; private set; }
@@ -41,7 +43,9 @@ public class GameRun : MonoBehaviour
     public int Cash => Money;
     public int BossReward => bossReward;
 
-    public int NextDueDay => Day > 0 && !IsFinished && !AwaitingPokerBoss ? Day : 0;
+    public int NextDueDay =>
+        Day > 0 && !IsFinished && !AwaitingPokerBoss ? Day : 0;
+
     public int NextPayment => NextDueDay > 0 ? dailyQuota : 0;
 
     public float SecondsLeft => CasinoSessionActive
@@ -58,9 +62,8 @@ public class GameRun : MonoBehaviour
         get
         {
             float baseLuck = GameData.PobierzLubUtworz().Luck;
-            float temporaryMultiplier = Time.unscaledTimeAsDouble < luckyEndsAt
-                ? 2f
-                : 1f;
+            float temporaryMultiplier =
+                Time.unscaledTimeAsDouble < luckyEndsAt ? 2f : 1f;
 
             return baseLuck * permanentLuckMultiplier * temporaryMultiplier;
         }
@@ -119,7 +122,10 @@ public class GameRun : MonoBehaviour
         ResetDailyPotions();
         permanentLuckMultiplier = 1f;
 
-        GameData.PobierzLubUtworz().SaldoGracza = DailyMoney;
+        GameData data = GameData.PobierzLubUtworz();
+        data.Luck = StartingLuck;
+        data.SaldoGracza = DailyMoney;
+
         Message = $"Your first daily quota is ${dailyQuota}.";
     }
 
@@ -152,8 +158,6 @@ public class GameRun : MonoBehaviour
             return false;
 
         data.SaldoGracza -= amount;
-
-        // An action that spends the last dollar ends the run.
         return !IsFinished;
     }
 
@@ -208,6 +212,59 @@ public class GameRun : MonoBehaviour
     {
         if (CasinoSessionActive && !IsFinished)
             EndRun("GAME OVER! The Death potion ended your run.");
+    }
+
+    public bool TryMatchThirdSlotSymbol()
+    {
+        float luck = EffectiveLuck;
+
+        if (luck >= 50f)
+        {
+            if (slotGuaranteeUsed)
+                return false;
+
+            slotGuaranteeUsed = true;
+            return true;
+        }
+
+        if (luck >= 40f) return RollLuck(15);
+        if (luck >= 30f) return RollLuck(10);
+        if (luck >= 20f) return RollLuck(5);
+
+        return false;
+    }
+
+    public bool TryRouletteReroll()
+    {
+        float luck = EffectiveLuck;
+
+        if (luck >= 70f) return RollLuck(8);
+        if (luck >= 60f) return RollLuck(6);
+        if (luck >= 50f) return RollLuck(4);
+        if (luck >= 40f) return RollLuck(3);
+        if (luck >= 30f) return RollLuck(2);
+        if (luck >= 20f) return RollLuck(1);
+
+        return false;
+    }
+
+    public bool TryBlackjackReroll()
+    {
+        float luck = EffectiveLuck;
+
+        if (luck >= 70f) return RollLuck(20);
+        if (luck >= 60f) return RollLuck(15);
+        if (luck >= 50f) return RollLuck(10);
+        if (luck >= 40f) return RollLuck(8);
+        if (luck >= 30f) return RollLuck(5);
+        if (luck >= 20f) return RollLuck(3);
+
+        return false;
+    }
+
+    private static bool RollLuck(int percent)
+    {
+        return UnityEngine.Random.Range(0, 100) < percent;
     }
 
     public void EnterBossFight()
@@ -282,7 +339,6 @@ public class GameRun : MonoBehaviour
 
         data.SaldoGracza -= dailyQuota;
 
-        // The balance setter ends the run if the quota leaves $0.
         if (IsFinished)
             return;
 
@@ -325,6 +381,7 @@ public class GameRun : MonoBehaviour
         soldBottles.Clear();
         luckyEndsAt = 0d;
         moneyEndsAt = 0d;
+        slotGuaranteeUsed = false;
     }
 
     private void EndRun(string message)
