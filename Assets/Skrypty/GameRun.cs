@@ -7,8 +7,8 @@ public class GameRun : MonoBehaviour
 {
     public static GameRun Instance { get; private set; }
 
-    [SerializeField, Min(1f)] private float sessionDuration = 180f;
-    [SerializeField, Min(1)] private int startingQuota = 20;
+    [SerializeField, Min(1f)] private float sessionDuration = 90f;
+    [SerializeField, Min(1)] private int startingQuota = 85;
     [SerializeField, Min(0)] private int bossReward = 50;
     [SerializeField] private string pokerBossScene = "BossBattle";
     [SerializeField] private string newDayScene = "NowyDzien";
